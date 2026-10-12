@@ -26,6 +26,8 @@ param (
         "k8s-apply",
         "k8s-delete",
         "k8s-status",
+        "hpa-status",
+        "load-test",
         "clean"
     )]
     [string]$Command = "help"
@@ -62,6 +64,8 @@ function Show-Help {
     Write-Host "  k8s-apply          Deploy all resources to Kubernetes cluster"
     Write-Host "  k8s-delete         Remove all resources from Kubernetes cluster"
     Write-Host "  k8s-status         Inspect running pods, services, and PVCs in eventflow namespace"
+    Write-Host "  hpa-status         Show status of Horizontal Pod Autoscaler"
+    Write-Host "  load-test          Execute k6 flash-sale load test (native or docker)"
     Write-Host "  clean              Remove Python caches and build artifacts"
     Write-Host ""
 }
@@ -206,7 +210,23 @@ switch ($Command) {
 
     "k8s-status" {
         Write-Host "--> Inspecting Kubernetes resources (namespace: eventflow)..." -ForegroundColor Cyan
-        kubectl get all,pvc,configmap -n eventflow
+        kubectl get all,pvc,configmap,hpa -n eventflow
+    }
+
+    "hpa-status" {
+        Write-Host "--> Inspecting Horizontal Pod Autoscaler (HPA)..." -ForegroundColor Cyan
+        kubectl get hpa backend-hpa -n eventflow
+        kubectl describe hpa backend-hpa -n eventflow
+    }
+
+    "load-test" {
+        Write-Host "--> Running k6 flash-sale load test..." -ForegroundColor Cyan
+        if (Get-Command k6 -ErrorAction SilentlyContinue) {
+            k6 run scripts/k6-load-test.js
+        } else {
+            Write-Host "--> k6 not found locally; executing via official Docker container..." -ForegroundColor Yellow
+            docker run --rm -i --network="host" -v "${ProjectRoot}/scripts:/scripts" grafana/k6 run /scripts/k6-load-test.js
+        }
     }
 
     "clean" {
