@@ -1,8 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Ticket } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export default function Footer() {
+  const { isAuthenticated, isAdmin } = useAuth()
+
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -21,8 +24,25 @@ export default function Footer() {
 
           <div className="footer-links">
             <Link to="/events">Explore events</Link>
-            <Link to="/login">Sign in</Link>
-            <Link to="/register">Create account</Link>
+            {isAuthenticated ? (
+              isAdmin ? (
+                <>
+                  <Link to="/admin/dashboard">Admin Hub</Link>
+                  <Link to="/admin/events">Manage events</Link>
+                  <Link to="/admin/users">User directory</Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/dashboard">Dashboard</Link>
+                  <Link to="/bookings">My tickets</Link>
+                </>
+              )
+            ) : (
+              <>
+                <Link to="/login">Sign in</Link>
+                <Link to="/register">Create account</Link>
+              </>
+            )}
           </div>
         </div>
 
