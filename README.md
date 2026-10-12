@@ -159,9 +159,9 @@ EventFlow follows a structured 10-phase delivery plan. Below is the detailed tra
 | **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`c80ee4a`](https://github.com/LonelyDreamer005/EventFlow/commit/c80ee4a) |
 | **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`8a1ed87`](https://github.com/LonelyDreamer005/EventFlow/commit/8a1ed87) |
 | **7** | **CI/CD Automation** | GitHub Actions workflows: `.github/workflows/ci.yml` (multi-job matrix: Ruff linting & formatting, Pytest suite with live PostgreSQL 15-alpine service, Frontend build, Docker build validation) & `.github/workflows/publish.yml` (automated GHCR image build & push with SHA & latest tags) | **DONE** | [`3c86b5a`](https://github.com/LonelyDreamer005/EventFlow/commit/3c86b5a) |
-| **8** | **Kubernetes Deployment** | Production declarative manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, DB migration pre-flight Job, Backend/Frontend Deployments & Services, and Kustomize orchestration | **DONE** | [`0474206`](https://github.com/LonelyDreamer005/EventFlow/commit/0474206) |
-| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **NEXT** | *Upcoming* |
-| **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **PENDING** | *Upcoming* |
+| **8** | **Kubernetes Deployment** | Production declarative manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, DB migration pre-flight Job, Backend/Frontend Deployments & Services, and Kustomize orchestration | **DONE** | [`25d3f9a`](https://github.com/LonelyDreamer005/EventFlow/commit/25d3f9a) |
+| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 flash-sale load testing script, rolling update verification, and pod self-healing drills | **DONE** | [`cfe8ae4`](https://github.com/LonelyDreamer005/EventFlow/commit/cfe8ae4) |
+| **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **NEXT** | *Upcoming* |
 
 ---
 
@@ -874,9 +874,21 @@ The core application, concurrency engine, frontend, and tests are complete and p
   - `.\scripts\dev.ps1 k8s-status` — Inspects all running pods, services, and PVCs in `eventflow`.
   - `.\scripts\dev.ps1 k8s-delete` — Clean teardown of all Kubernetes resources.
 
-### Phase 9: Autoscaling & Resilience
-- **HPA**: Autoscales backend pods between 2 and 8 replicas based on CPU demand.
-- **k6 Load Testing**: Realistic flash-sale load testing script triggering automatic pod scaling.
+### Phase 9: Autoscaling & Resilience Engineering (Completed)
+- **Horizontal Pod Autoscaling (`k8s/hpa.yaml`)**:
+  - Automatically scales backend deployment between **2 and 8 replicas** based on a target **60% average CPU utilization**.
+  - **Aggressive Scale-Up**: `stabilizationWindowSeconds: 30`, adding up to 4 pods or 100% capacity every 15 seconds to absorb sudden ticket flash-sale spikes.
+  - **Conservative Scale-Down**: `stabilizationWindowSeconds: 120`, preventing flapping and ensuring ongoing checkout sessions conclude cleanly.
+- **Flash-Sale Load Testing Engine (`scripts/k6-load-test.js`)**:
+  - Simulates 50 concurrent virtual users (VUs) contending for finite event inventory over multi-phase traffic stages (warm-up, flash spike, peak hold, cool-down).
+  - Validates service health, event catalog queries, user authentication, and transactional row-level reservation locking.
+  - Strictly enforces quality thresholds: `p(95) < 500ms` response times and `server_errors < 1%`.
+- **Fault-Tolerance & Self-Healing Verification**:
+  - **Pod Eviction Drill**: Deleting active pods (`kubectl delete pod -l app=backend -n eventflow`) triggers instantaneous ReplicaSet self-healing with zero user-visible request drops.
+  - **Zero-Downtime Rollouts**: `RollingUpdate` with `maxSurge: 1` and `maxUnavailable: 0` ensures new application versions deploy smoothly behind readiness probes.
+  - **CLI Runner Commands**:
+    - `.\scripts\dev.ps1 load-test` — Executes k6 load test natively or through official Docker container.
+    - `.\scripts\dev.ps1 hpa-status` — Streams live HPA metrics and replica count scaling.
 
 ### Phase 10: Observability
 - Prometheus metrics scraping configuration.
