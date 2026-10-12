@@ -26,7 +26,7 @@
 5. [Database Entity-Relationship Model](#5-database-entity-relationship-model)
 6. [Complete Repository Structure](#6-complete-repository-structure)
 7. [API Specification & Example Payloads](#7-api-specification--example-payloads)
-8. [Frontend Architecture & Design System](#8-frontend-architecture--design-system)
+8. [Frontend Architecture, Design System & UI Testing Guide](#8-frontend-architecture--design-system)
 9. [Security, Hardening & Role-Based Access Control](#9-security-hardening--role-based-access-control)
 10. [Local Development Guide (PowerShell & Make)](#10-local-development-guide-powershell--make)
 11. [Automated Testing & Concurrency Verification](#11-automated-testing--concurrency-verification)
@@ -564,6 +564,43 @@ The frontend is built using **React 18** and **Vite 6** without third-party CSS 
 /admin/events/:id/tickets -> TicketManager (Protected: Admin ticket tier editor)
 /unauthorized          -> Unauthorized (403 message)
 *                      -> NotFound (404 message)
+```
+
+### How to Start & Test the Frontend (Quick UI Check)
+
+You can launch and test the frontend UI in your browser with **one single command**, even before setting up the backend database:
+
+#### 1. Start the Frontend Server
+- **Via Windows PowerShell runner (Recommended)**:
+  ```powershell
+  .\scripts\dev.ps1 run-frontend
+  ```
+- **Via npm directly**:
+  ```bash
+  npm --prefix frontend run dev
+  # or
+  cd frontend
+  npm run dev
+  ```
+
+#### 2. Open in Your Browser
+- **Local URL**: [http://localhost:3000](http://localhost:3000)
+- **Network / Mobile preview**: Displays in your terminal upon launch (e.g., `http://<your-ip>:3000`)
+
+#### 3. Pages & Features to Test
+- **Landing Page** (`/`): Inspect the dark glassmorphic hero, concurrency guarantees, and layout.
+- **Events Catalog** (`/events`): Test search filtering, event cards, and pagination.
+- **Event Details & Ticket Selector** (`/events/1`): Test live ticket steppers, order maximums, and simulated checkout.
+- **Authentication** (`/login` & `/register`): Test form validation, password rules, and session redirection.
+- **Customer Portal** (`/dashboard` & `/bookings`): Test booking status pills (`Confirmed` / `Cancelled`) and stats.
+- **Booking Voucher** (`/bookings/1`): Test itemized tickets table, simulated instant settlement, and printable receipt.
+- **Admin Hub** (`/admin/dashboard` & `/admin/events`): Test KPI metric cards, event forms, and ticket tier quota management.
+
+#### 4. Verifying Production Bundle
+To build and test the minified production bundle served by Vite:
+```powershell
+.\scripts\dev.ps1 frontend-build
+npm --prefix frontend run preview
 ```
 
 ---
