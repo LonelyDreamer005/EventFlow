@@ -107,7 +107,9 @@ switch ($Command) {
 
     "run-backend" {
         Write-Host "--> Starting Flask server on http://localhost:5000..." -ForegroundColor Cyan
-        flask --app backend/wsgi.py run --host=0.0.0.0 --port=5000
+        $env:FLASK_APP = (Join-Path $ProjectRoot "backend\wsgi.py")
+        $env:PYTHONPATH = (Join-Path $ProjectRoot "backend")
+        python (Join-Path $ProjectRoot "backend\wsgi.py")
     }
 
     "run-frontend" {
@@ -122,12 +124,16 @@ switch ($Command) {
 
     "migrate" {
         Write-Host "--> Running database migrations..." -ForegroundColor Cyan
-        flask --app backend/wsgi.py db upgrade
+        $env:FLASK_APP = (Join-Path $ProjectRoot "backend\wsgi.py")
+        $env:PYTHONPATH = (Join-Path $ProjectRoot "backend")
+        flask db upgrade
     }
 
     "create-admin" {
         Write-Host "--> Creating administrator account..." -ForegroundColor Cyan
-        flask --app backend/wsgi.py create-admin
+        $env:FLASK_APP = (Join-Path $ProjectRoot "backend\wsgi.py")
+        $env:PYTHONPATH = (Join-Path $ProjectRoot "backend")
+        flask create-admin
     }
 
     "docker-build" {

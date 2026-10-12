@@ -10,10 +10,12 @@ def _require_env(key: str, default: str | None = None) -> str:
     """Return env var value or raise RuntimeError in production."""
     value = os.environ.get(key, default)
     if value is None:
-        raise RuntimeError(
-            f"Required environment variable '{key}' is not set. "
-            "Check your .env file or container environment."
-        )
+        if os.environ.get("FLASK_ENV", "development").lower() == "production":
+            raise RuntimeError(
+                f"Required environment variable '{key}' is not set. "
+                "Check your .env file or container environment."
+            )
+        return f"dev-fallback-{key.lower()}"
     return value
 
 

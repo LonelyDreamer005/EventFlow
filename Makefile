@@ -74,17 +74,17 @@ frontend-build:
 
 # ─── Run locally ─────────────────────────────────────────────────────────────
 run-backend:
-	flask --app backend/wsgi.py run --host=0.0.0.0 --port=5000
+	python backend/wsgi.py
 
 run-frontend:
 	npm --prefix frontend run dev
 
 # ─── Database ────────────────────────────────────────────────────────────────
 migrate:
-	flask --app backend/wsgi.py db upgrade
+	python -m flask --app backend/wsgi.py db upgrade
 
 create-admin:
-	flask --app backend/wsgi.py create-admin
+	python -m flask --app backend/wsgi.py create-admin
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
 docker-build:

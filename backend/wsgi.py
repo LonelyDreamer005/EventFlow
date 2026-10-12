@@ -3,7 +3,12 @@ EventFlow — Backend Entry Point
 Used by: flask run (dev), gunicorn (prod), tests
 """
 
+import os
+import sys
 from dotenv import load_dotenv
+
+# Ensure backend directory is in python search path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 load_dotenv()  # Load .env file if present
 
