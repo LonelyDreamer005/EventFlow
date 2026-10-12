@@ -1,4 +1,4 @@
-# EventFlow — High-Concurrency Event Reservation Platform
+# EventFlow - High-Concurrency Event Reservation Platform
 
 <p align="center">
   <strong>Production-Grade Full-Stack Event Booking System with PostgreSQL Row-Level Concurrency Control & End-to-End DevOps Automation</strong>
@@ -19,188 +19,219 @@
 ---
 
 ## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Master Plan vs. Current Progress](#master-plan-vs-current-progress)
-3. [Core Technical Differentiator (Concurrency Safety)](#core-technical-differentiator)
-4. [System Architecture](#system-architecture)
-5. [Database Model & Schema](#database-model--schema)
-6. [API Specification](#api-specification)
-7. [Frontend Application & UI Architecture](#frontend-application--ui-architecture)
-8. [Local Development & Getting Started](#local-development--getting-started)
-9. [Running the Automated Test Suite](#running-the-automated-test-suite)
-10. [Remaining DevOps Roadmap](#remaining-devops-roadmap)
+1. [Project Overview & Engineering Highlights](#1-project-overview--engineering-highlights)
+2. [Master Project Roadmap: Plan vs. Current Progress](#2-master-project-roadmap-plan-vs-current-progress)
+3. [Deep Dive: Concurrency Control & Inventory Safety](#3-deep-dive-concurrency-control--inventory-safety)
+4. [System Architecture & Data Flows](#4-system-architecture--data-flows)
+5. [Database Entity-Relationship Model](#5-database-entity-relationship-model)
+6. [Complete Repository Structure](#6-complete-repository-structure)
+7. [API Specification & Example Payloads](#7-api-specification--example-payloads)
+8. [Frontend Architecture & Design System](#8-frontend-architecture--design-system)
+9. [Security, Hardening & Role-Based Access Control](#9-security-hardening--role-based-access-control)
+10. [Local Development Guide (PowerShell & Make)](#10-local-development-guide-powershell--make)
+11. [Automated Testing & Concurrency Verification](#11-automated-testing--concurrency-verification)
+12. [Troubleshooting & Frequently Asked Questions](#12-troubleshooting--frequently-asked-questions)
+13. [Upcoming DevOps Phases Roadmap](#13-upcoming-devops-phases-roadmap)
 
 ---
 
-## 1. Project Overview
+## 1. Project Overview & Engineering Highlights
 
-**EventFlow** is an enterprise-grade event ticket booking and reservation application designed to demonstrate the complete software delivery lifecycle (SDLC). It addresses a core problem in modern web distributed systems: **flash-sale ticket overselling and inventory race conditions**.
+**EventFlow** is an enterprise-grade, distributed event ticket booking and reservation platform. It was engineered to showcase the complete modern software delivery lifecycle: from clean backend domain architecture and strict transactional concurrency, to a responsive frontend SPA, containerization, automated testing, and cloud-native observability.
 
-When hundreds or thousands of users attempt to purchase the final remaining tickets simultaneously, traditional read-then-write application patterns result in negative inventory balances. EventFlow solves this by implementing **pessimistic row-level locking** (`SELECT ... FOR UPDATE`) in PostgreSQL, combined with explicit database-level constraints and atomic transaction rollbacks.
+### The Real-World Engineering Problem
+In modern high-demand ticketing platforms (concert tours, developer conferences, sporting events), thousands of users attempt to purchase remaining tickets within milliseconds of a flash sale launching. 
 
-### Key Capabilities
-- **Strict Concurrency Guarantees**: Zero overbooking under high concurrent load; verified via automated multi-threaded stress tests.
-- **Role-Based Access Control (RBAC)**: Secure separation between public attendees and administrators.
-- **Frozen Price Modeling**: Historical purchase prices are immutably captured at booking creation time.
-- **Double-Cancel Protection**: Idempotent cancellation logic ensuring tickets are restored to available inventory exactly once.
-- **Full-Stack Glassmorphic UI**: High-fidelity dark aesthetic built in React 18, Vite, and Vanilla CSS with zero external UI bloat.
-- **Built-in Observability**: Real-time Prometheus metrics exporter (`/metrics`) and Kubernetes liveness/readiness probes (`/health`).
+Standard web applications that implement non-transactional or optimistic read-then-write updates fail dramatically under this load:
+1. Two concurrent requests check availability (`available = 1`).
+2. Both evaluate `1 >= 1` as valid.
+3. Both execute `UPDATE ticket_types SET available = available - 1`.
+4. Result: **Oversold inventory** (`available = -1`), duplicate seat allocations, broken customer trust, and financial reconciliation nightmares.
 
----
-
-## 2. Master Plan vs. Current Progress
-
-Here is the exact status of the planned 10-phase software delivery roadmap:
-
-| Phase | Milestone Name | Planned Scope | Current Status |
-|---|---|---|:---:|
-| **Phase 1** | **Workspace & Foundation** | Project directory structure, `.gitignore`, `.env.example`, `pyproject.toml`, cross-platform `Makefile`, and native `scripts/dev.ps1` | **COMPLETED** |
-| **Phase 2** | **Backend Architecture & APIs** | Flask factory, config classes, SQLAlchemy models (`User`, `Event`, `TicketType`, `Booking`, `BookingItem`), Marshmallow schemas, REST endpoints, and RBAC | **COMPLETED** |
-| **Phase 3** | **Reservation Correctness** | Concurrency-safe `booking_service.py` with `SELECT ... FOR UPDATE`, atomic stock deductions, and double-cancel prevention | **COMPLETED** |
-| **Phase 4** | **Frontend Application** | React 18 SPA with Vite, glassmorphic dark design system, customer portal, real-time ticket booking flow, receipt voucher, and admin management hub | **COMPLETED** |
-| **Phase 5** | **Automated Quality & Tests** | Comprehensive test suite (`pytest`) covering unit tests, integration tests, and 20-thread concurrency tests against PostgreSQL | **COMPLETED** |
-| **Phase 6** | **Containerization** | Production multi-stage `Dockerfile` (Backend & Frontend) and `docker-compose.yml` with health checks and volume persistence | ⏳ **NEXT UP** |
-| **Phase 7** | **CI/CD Automation** | GitHub Actions pipelines: `.github/workflows/ci.yml` (linting, pytest, coverage) and `publish.yml` (GHCR image publishing) | ⏳ **PENDING** |
-| **Phase 8** | **Kubernetes Deployment** | Kubernetes manifests (`k8s/`): Namespace, ConfigMaps, Secrets, Postgres StatefulSet, Deployments, Services, Ingress, and DB migration Job | ⏳ **PENDING** |
-| **Phase 9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA), k6 load testing scripts, rolling restart zero-downtime tests, and pod failure self-healing | ⏳ **PENDING** |
-| **Phase 10** | **Observability** | Prometheus scraping configuration, Grafana EventFlow dashboard, and key performance indicators (KPI) visualization | ⏳ **PENDING** |
+### How EventFlow Solves This
+EventFlow implements **Pessimistic Row-Level Locking** powered by PostgreSQL's `SELECT ... FOR UPDATE` within an atomic database transaction:
+- When a user initiates a booking, EventFlow locks the specific `TicketType` row exclusively.
+- All other concurrent transactions targeting the same ticket tier queue deterministically at the database engine level.
+- The transaction checks stock, decrements inventory, creates the booking record, and commits - releasing the lock atomically.
+- **Result: Mathematical zero overbooking**, verified by high-concurrency stress tests.
 
 ---
 
-## 3. Core Technical Differentiator
+## 2. Master Project Roadmap: Plan vs. Current Progress
 
-### The Overselling Problem
-In standard architectures, checking inventory and creating bookings is done across separate queries:
-```sql
--- VULNERABLE READ
-SELECT available FROM ticket_types WHERE id = 1; -- Returns 1
--- App checks: 1 >= 1 (OK)
--- Context switch / concurrent request also reads 1
-UPDATE ticket_types SET available = available - 1 WHERE id = 1; -- Both execute! Available becomes -1 (OVERBOOKED)
+EventFlow follows a structured 10-phase delivery plan. Below is the detailed tracking of each phase:
+
+| Phase | Milestone Title | Key Deliverables & Plan Requirements | Status | Git Checkpoint |
+|:---:|---|---|:---:|:---:|
+| **1** | **Workspace & Foundation** | Project structure, `.gitignore`, `.env.example`, `pyproject.toml`, cross-platform `Makefile`, native `scripts/dev.ps1` | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
+| **2** | **Backend Architecture & APIs** | Flask factory, Dev/Test/Prod configs, SQLAlchemy models (`User`, `Event`, `TicketType`, `Booking`, `BookingItem`), Marshmallow schemas, REST endpoints under `/api/v1`, and role-based decorators (`@admin_required`, `@customer_required`) | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
+| **3** | **Reservation Correctness** | Concurrency engine in `booking_service.py` using `SELECT ... FOR UPDATE`, atomic stock deductions, double-cancel protection, frozen pricing, and Prometheus metrics emission | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
+| **4** | **Frontend Application** | React 18 + Vite SPA, glassmorphic dark design system (`index.css`), Axios interceptors, `AuthContext`, customer portal, interactive ticket selector, booking vouchers, and admin hub | **DONE** | [`c850295`](https://github.com/LonelyDreamer005/EventFlow/commit/c850295) |
+| **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
+| **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | ⏳ **NEXT** | *In Progress* |
+| **7** | **CI/CD Automation** | GitHub Actions `.github/workflows/ci.yml` (quality gates: Ruff lint, Pytest with PostgreSQL service, coverage >= 80%) & `publish.yml` (build and push container images to GHCR) | ⏳ **PENDING** | *Upcoming* |
+| **8** | **Kubernetes Deployment** | Production manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, Backend/Frontend Deployments & Services, and DB migration Job | ⏳ **PENDING** | *Upcoming* |
+| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **PENDING** | *Upcoming* |
+| **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **PENDING** | *Upcoming* |
+
+---
+
+## 3. Deep Dive: Concurrency Control & Inventory Safety
+
+### Concurrency Contention Sequence
+
+The diagram below illustrates how two concurrent booking transactions (Thread A and Thread B) competing for the last remaining ticket are handled by EventFlow:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor CustomerA as Customer A (Thread 1)
+    actor CustomerB as Customer B (Thread 2)
+    participant API as Booking Service
+    participant DB as PostgreSQL Engine
+
+    Note over CustomerA,CustomerB: 1 Ticket Remaining (available = 1)
+    CustomerA->>API: POST /api/v1/bookings (qty: 1)
+    CustomerB->>API: POST /api/v1/bookings (qty: 1)
+    
+    API->>DB: BEGIN TRANSACTION (Tx 1)
+    API->>DB: BEGIN TRANSACTION (Tx 2)
+
+    API->>DB: Tx 1: SELECT * FROM ticket_types WHERE id=1 FOR UPDATE;
+    Note over DB: Tx 1 acquires Row Exclusive Lock on Ticket #1
+    
+    API->>DB: Tx 2: SELECT * FROM ticket_types WHERE id=1 FOR UPDATE;
+    Note over DB: Tx 2 is BLOCKED and waits for Tx 1 to finish
+
+    Note over API,DB: Tx 1 evaluates: available (1) >= requested (1) -> OK
+    API->>DB: Tx 1: UPDATE ticket_types SET available = 0 WHERE id=1;
+    API->>DB: Tx 1: INSERT INTO bookings ...;
+    API->>DB: Tx 1: COMMIT;
+    Note over DB: Tx 1 committed. Lock released!
+    API-->>CustomerA: 201 Created (Booking Confirmed)
+
+    Note over DB: Tx 2 unblocks and reads committed row (available = 0)
+    Note over API,DB: Tx 2 evaluates: available (0) < requested (1) -> FAILS!
+    API->>DB: Tx 2: ROLLBACK;
+    Note over DB: Tx 2 aborted. Zero inventory mutation.
+    API-->>CustomerB: 409 Conflict / 400 Bad Request (Sold Out)
 ```
 
-### EventFlow's Pessimistic Locking Solution
-EventFlow acquires an exclusive row-level lock within an atomic database transaction:
+### Safety Guarantees Implemented
 
-```python
-with db.session.begin():
-    # 1. SELECT ... FOR UPDATE acquires an exclusive row lock on the TicketType row.
-    # Concurrent transactions attempting to lock the same row will wait until this transaction completes.
-    ticket_type = (
-        db.session.query(TicketType)
-        .filter_by(id=item_data["ticket_type_id"])
-        .with_for_update()
-        .first()
-    )
-
-    if ticket_type.available < item_data["quantity"]:
-        raise InsufficientInventoryError(f"Only {ticket_type.available} tickets left.")
-
-    # 2. Safely deduct inventory while holding the lock
-    ticket_type.available -= item_data["quantity"]
-
-    # 3. Create Booking & BookingItem (capturing frozen price)
-    booking = Booking(reference=generate_booking_reference(), user_id=user_id, status=BookingStatus.CONFIRMED, ...)
-    db.session.add(booking)
-    # Commit finishes the transaction and releases the lock atomically
-```
-
-### Safety Nets Implemented
-1. **Database-level CHECK constraint**: `CHECK (available >= 0)` and `CHECK (available <= capacity)`. Even if application-level validation was bypassed, PostgreSQL will abort the transaction with an `IntegrityError`.
-2. **Double-Cancel Prevention**: Booking cancellation verifies `status == CONFIRMED` in a transaction. Once marked `CANCELLED`, repeated cancellation attempts are rejected (HTTP 400).
-3. **Price Freezing**: The unit price is captured at checkout into `BookingItem.unit_price`. Subsequent price adjustments by administrators never mutate historical purchases.
+1. **Row-Level Mutual Exclusion**: `db.session.query(TicketType).with_for_update()` ensures only one transaction mutates stock at any instant.
+2. **Database CHECK Constraints**: 
+   ```sql
+   ALTER TABLE ticket_types ADD CONSTRAINT chk_ticket_available_non_negative CHECK (available >= 0);
+   ALTER TABLE ticket_types ADD CONSTRAINT chk_ticket_available_lte_capacity CHECK (available <= capacity);
+   ```
+   Even if an application bug bypassed software checks, PostgreSQL strictly rejects any query that would result in negative available inventory.
+3. **Double-Cancellation Protection**:
+   When cancelling a booking, the status must strictly be `confirmed`. If a user or script triggers repeated cancellation calls, the service checks `booking.status == BookingStatus.CONFIRMED`. Any subsequent call raises `InvalidBookingStateError` (`HTTP 400`), preventing inventory duplication.
+4. **Frozen Pricing Principle**:
+   `BookingItem.unit_price` stores the price at checkout. If an administrator subsequently alters the `TicketType.price` from $50 to $100, past receipts and revenue reporting remain unchanged.
 
 ---
 
-## 4. System Architecture
+## 4. System Architecture & Data Flows
 
 ```mermaid
 graph TB
     subgraph Client Layer
-        Browser[React 18 SPA / Vite]
+        Browser[Modern Browser / React 18 SPA]
     end
 
-    subgraph Reverse Proxy / Web Server
+    subgraph Ingress / Edge Tier
         Nginx[Nginx Reverse Proxy :80]
     end
 
     subgraph Application Tier
-        Gunicorn[Gunicorn WSGI Server]
-        Flask[Flask Application Factory :5000]
-        Metrics[Prometheus Exporter /metrics]
-        Health[Health Check /health]
+        Gunicorn[Gunicorn WSGI Master / Workers]
+        FlaskFactory[Flask Application Factory]
+        AuthModule[JWT & Role Authentication]
+        BookingEngine[Transactional Booking Service]
+        MetricsExporter[Prometheus Metrics :5000/metrics]
+        HealthCheck[Liveness/Readiness :5000/health]
     end
 
     subgraph Data Tier
         Postgres[(PostgreSQL 15 Database)]
+        RowLock[Row-Level Locking Engine]
     end
 
     Browser -->|HTTP Requests| Nginx
-    Nginx -->|/api/* & /health| Flask
-    Nginx -->|Static Assets| Browser
-    Flask --> Gunicorn
-    Flask -->|SELECT ... FOR UPDATE| Postgres
-    Flask --> Metrics
-    Flask --> Health
+    Nginx -->|/api/v1/*| Gunicorn
+    Nginx -->|/health & /metrics| Gunicorn
+    Nginx -->|Static JS/CSS/HTML Assets| Browser
+
+    Gunicorn --> FlaskFactory
+    FlaskFactory --> AuthModule
+    FlaskFactory --> BookingEngine
+    FlaskFactory --> MetricsExporter
+    FlaskFactory --> HealthCheck
+
+    BookingEngine -->|BEGIN TX| Postgres
+    BookingEngine -->|SELECT ... FOR UPDATE| RowLock
+    RowLock --> Postgres
 ```
 
 ---
 
-## 5. Database Model & Schema
+## 5. Database Entity-Relationship Model
 
 ```mermaid
 erDiagram
     USER {
-        int id PK
-        varchar name
-        varchar email UK
-        varchar password_hash
+        int id PK "Auto-increment primary key"
+        varchar name "User full name"
+        varchar email UK "Unique indexed email"
+        varchar password_hash "pbkdf2:sha256 hashed password"
         enum role "customer | admin"
-        timestamp created_at
+        timestamp created_at "Account creation timestamp"
     }
 
     EVENT {
-        int id PK
-        varchar title
-        text description
-        varchar venue
-        timestamp start_at
-        timestamp end_at
+        int id PK "Event identifier"
+        varchar title "Event title"
+        text description "Detailed markdown description"
+        varchar venue "Physical location or stream URL"
+        timestamp start_at "Event start date and time"
+        timestamp end_at "Event conclusion date and time"
         enum status "draft | published | cancelled"
-        int created_by FK
-        timestamp created_at
-        timestamp updated_at
+        int created_by FK "Creator admin user ID"
+        timestamp created_at "Record creation timestamp"
+        timestamp updated_at "Record last update"
     }
 
     TICKET_TYPE {
-        int id PK
-        int event_id FK
-        varchar name
-        numeric price
-        int capacity
-        int available "CHECK available >= 0"
-        int max_per_booking
-        timestamp created_at
-        timestamp updated_at
+        int id PK "Ticket tier identifier"
+        int event_id FK "Associated event"
+        varchar name "Tier name (VIP, General, Early Bird)"
+        numeric price "Price per ticket (Numeric 10,2)"
+        int capacity "Maximum total capacity"
+        int available "Currently available (CHECK >= 0)"
+        int max_per_booking "Per-order limit (Default: 10)"
+        timestamp created_at "Creation timestamp"
+        timestamp updated_at "Update timestamp"
     }
 
     BOOKING {
-        int id PK
-        varchar reference UK
-        int user_id FK
+        int id PK "Internal booking identifier"
+        varchar reference UK "12-char unique reference code"
+        int user_id FK "Customer user identifier"
         enum status "confirmed | cancelled"
-        numeric total_amount
-        timestamp created_at
-        timestamp updated_at
+        numeric total_amount "Total sum paid (Numeric 10,2)"
+        timestamp created_at "Booking timestamp"
+        timestamp updated_at "Last status change"
     }
 
     BOOKING_ITEM {
-        int id PK
-        int booking_id FK
-        int ticket_type_id FK
-        int quantity
+        int id PK "Line item identifier"
+        int booking_id FK "Parent booking reference"
+        int ticket_type_id FK "Referenced ticket tier"
+        int quantity "Number of tickets reserved"
         numeric unit_price "Price frozen at booking time"
-        numeric subtotal
+        numeric subtotal "quantity * unit_price"
     }
 
     USER ||--o{ EVENT : "creates (admin)"
@@ -212,150 +243,483 @@ erDiagram
 
 ---
 
-## 6. API Specification
+## 6. Complete Repository Structure
 
-All application endpoints are versioned under `/api/v1`.
-
-### Authentication (`/api/v1/auth`)
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | Register customer account (`{ name, email, password }`) |
-| `POST` | `/api/v1/auth/login` | Public | Authenticate user & issue JWT bearer access token |
-| `GET` | `/api/v1/auth/me` | JWT | Get authenticated profile & role (`customer` / `admin`) |
-
-### Events (`/api/v1/events`)
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/events` | Public | Paginated list of published events (searchable by keyword) |
-| `GET` | `/api/v1/events/<id>` | Public | Detailed event view with ticket tiers & remaining inventory |
-| `POST` | `/api/v1/events` | Admin | Create new event listing (starts in `draft` status) |
-| `PATCH` | `/api/v1/events/<id>` | Admin | Update event metadata or publish (`status: "published"`) |
-| `POST` | `/api/v1/events/<id>/cancel`| Admin | Cancel entire event (disables further booking) |
-
-### Ticket Types (`/api/v1/ticket-types` & `/api/v1/events/<id>/ticket-types`)
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/events/<id>/ticket-types` | Public | List available ticket tiers for an event |
-| `POST` | `/api/v1/events/<id>/ticket-types` | Admin | Create tier (name, price, capacity, max_per_booking) |
-| `PATCH` | `/api/v1/ticket-types/<id>` | Admin | Adjust price or capacity (cannot reduce below sold quota) |
-
-### Bookings (`/api/v1/bookings`)
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/bookings` | Customer | Atomically create booking reservation with row lock |
-| `GET` | `/api/v1/bookings` | Customer/Admin | List user's bookings (admin sees all platform bookings) |
-| `GET` | `/api/v1/bookings/<id>` | Owner/Admin | View receipt voucher (strict privacy check: returns 404 on unowned) |
-| `POST` | `/api/v1/bookings/<id>/cancel` | Owner/Admin | Cancel booking & atomically return tickets to inventory |
-
-### Admin Dashboard (`/api/v1/admin`)
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/admin/dashboard` | Admin | Database-computed totals: revenue, tickets sold, events, bookings |
-| `GET` | `/api/v1/admin/users` | Admin | Paginated list of registered users |
-
-### System & Health Endpoints
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/health` | Public | Liveness/readiness probe verifying database connectivity |
-| `GET` | `/metrics` | Public | Prometheus scrape target emitting request counts and latency histograms |
+```
+d:\BookingLite\
+├── .env.example                     # Root environment variable template
+├── .gitattributes                   # Line ending normalizer (LF for code, CRLF for ps1)
+├── .gitignore                       # Multi-stack ignore rules (Python, Node, Docker, secrets)
+├── Makefile                         # Cross-platform GNU Make targets
+├── pyproject.toml                   # Ruff linter, Pytest configuration, and test markers
+├── README.md                        # Master project documentation
+│
+├── backend/
+│   ├── .env.example                 # Backend development configuration template
+│   ├── gunicorn.conf.py             # Production Gunicorn worker and logging configuration
+│   ├── requirements.txt             # Core backend production dependencies
+│   ├── requirements-dev.txt         # Dev and test dependencies (pytest, pytest-cov, ruff)
+│   ├── wsgi.py                      # Application entrypoint loading environment & create_app()
+│   ├── app/
+│   │   ├── __init__.py              # Application factory with CLI commands (create-admin)
+│   │   ├── config.py                # Configuration classes (Development, Testing, Production)
+│   │   ├── extensions.py            # Extensions (db, jwt, migrate, limiter)
+│   │   ├── errors.py                # Centralized JSON error handlers (400, 401, 403, 404, 500)
+│   │   ├── health.py                # /health endpoint with database ping probe
+│   │   ├── metrics.py               # /metrics Prometheus exporter (counters & latency histograms)
+│   │   ├── api/
+│   │   │   ├── __init__.py          # Blueprint package registration under /api/v1
+│   │   │   ├── auth.py              # /api/v1/auth/* (register, login, me)
+│   │   │   ├── events.py            # /api/v1/events/* (public list/detail, admin CRUD)
+│   │   │   ├── ticket_types.py      # /api/v1/ticket-types/* (quota & tier management)
+│   │   │   ├── bookings.py          # /api/v1/bookings/* (create, list, detail, cancel)
+│   │   │   └── admin.py             # /api/v1/admin/* (aggregated database analytics)
+│   │   ├── auth/
+│   │   │   ├── __init__.py
+│   │   │   └── decorators.py        # RBAC decorators (@admin_required, @customer_required)
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py              # User model with role enumeration
+│   │   │   ├── event.py             # Event model with status lifecycle
+│   │   │   ├── ticket_type.py       # TicketType model with stock check constraint
+│   │   │   ├── booking.py           # Booking model with unique alphanumeric reference
+│   │   │   └── booking_item.py      # BookingItem model with frozen unit price
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py              # Marshmallow auth schemas
+│   │   │   ├── event.py             # Event serialization and validation schemas
+│   │   │   ├── ticket_type.py       # Ticket type serialization and capacity schemas
+│   │   │   └── booking.py           # Booking item validation and receipt schemas
+│   │   └── services/
+│   │       ├── __init__.py
+│   │       └── booking_service.py   # AUTHORITATIVE transactional row-locking service
+│   └── tests/
+│       ├── __init__.py
+│       ├── conftest.py              # Session & function-scoped database fixtures
+│       ├── test_auth.py             # Registration, login, validation, JWT expiration tests
+│       ├── test_events.py           # Public vs draft visibility, status lifecycle tests
+│       ├── test_bookings.py         # Booking creation, item calculation, double-cancel tests
+│       └── test_concurrency.py      # 20 concurrent threads stress test on PostgreSQL
+│
+├── frontend/
+│   ├── .env.example                 # Frontend Vite environment template
+│   ├── index.html                   # HTML5 shell linking Inter and Outfit Google Fonts
+│   ├── package.json                 # React 18, Vite 6, React Router 6, Axios, Lucide
+│   ├── vite.config.js               # Vite config with backend proxy on port 5000
+│   ├── nginx/
+│   │   └── nginx.conf               # Production Nginx reverse proxy configuration
+│   └── src/
+│       ├── App.jsx                  # Route definitions and ProtectedRoute configuration
+│       ├── main.jsx                 # React root mount
+│       ├── index.css                # Master glassmorphic CSS design system
+│       ├── context/
+│       │   └── AuthContext.jsx      # Auth provider managing token and user session
+│       ├── hooks/
+│       │   └── useAuth.js           # useAuth hook export
+│       ├── services/
+│       │   ├── api.js               # Axios instance with JWT interceptor & 401 handler
+│       │   ├── auth.js              # Auth API calls
+│       │   ├── events.js            # Events & ticket tier API calls
+│       │   ├── bookings.js          # Booking reservation and cancellation calls
+│       │   └── admin.js             # Admin dashboard analytics calls
+│       ├── utils/
+│       │   ├── formatters.js        # Currency, date, and timestamp formatting utilities
+│       │   └── validators.js        # Email and password validation helpers
+│       ├── components/
+│       │   ├── Navbar.jsx           # Glassmorphic header with role-based navigation
+│       │   ├── Footer.jsx           # Tech stack summary and architecture details
+│       │   ├── EventCard.jsx        # Event display card with lowest price computation
+│       │   ├── TicketSelector.jsx   # Live inventory stepper and subtotal calculator
+│       │   ├── BookingCard.jsx      # Customer booking summary card with cancel modal
+│       │   ├── StatusBadge.jsx      # Visual status pills for events, bookings, and roles
+│       │   ├── LoadingSpinner.jsx   # Accessible SVG loader
+│       │   ├── ErrorMessage.jsx     # Alert banner with retry callback
+│       │   ├── ConfirmModal.jsx     # Reusable confirmation dialog with danger mode
+│       │   ├── Pagination.jsx       # Accessible next/previous pagination bar
+│       │   └── ProtectedRoute.jsx   # Route guard checking authentication and roles
+│       └── pages/
+│           ├── Landing.jsx          # Public showcase highlighting concurrency & features
+│           ├── Events.jsx           # Event discovery catalog with search and filtering
+│           ├── EventDetail.jsx      # Event overview and real-time checkout flow
+│           ├── Login.jsx            # Sign-in form with session expiration alert
+│           ├── Register.jsx         # New customer registration form
+│           ├── CustomerDashboard.jsx# Customer metric counters and recent bookings
+│           ├── BookingHistory.jsx   # Tabbed booking history with status filters
+│           ├── BookingDetail.jsx    # Printable confirmation voucher with items table
+│           ├── AdminDashboard.jsx   # Admin analytics with real-time database KPIs
+│           ├── AdminEvents.jsx      # Admin table to publish, edit, or cancel events
+│           ├── EventForm.jsx        # Create/Edit event form with date validation
+│           ├── TicketManager.jsx    # Configure tiers, prices, and capacity limits
+│           ├── NotFound.jsx         # 404 Error page
+│           └── Unauthorized.jsx     # 403 Forbidden page
+│
+└── scripts/
+    └── dev.ps1                      # Windows PowerShell CLI runner (no make needed)
+```
 
 ---
 
-## 7. Frontend Application & UI Architecture
+## 7. API Specification & Example Payloads
 
-The frontend is a modern Single Page Application (SPA) located in `frontend/`.
+All endpoints respond with standard JSON format.
 
-- **Design System**: Vanilla CSS design tokens (`frontend/src/index.css`) featuring custom CSS variables, deep slate backdrop (`#070B14`), glowing indigo/cyan gradients, and backdrop blur (`backdrop-filter: blur(16px)`).
-- **Client Routing**: Full React Router 6 setup with role-guarded routes (`ProtectedRoute`).
-- **Interactive Ticket Booking**: Real-time quantity steppers enforcing per-order maximums, live subtotal math, and simulated instant checkout.
-- **Admin Hub**: Real-time KPI summary cards, event management table, and ticket tier quota editor.
-- **Production Bundle**: Bundled via Vite 6 (`npm run build`), producing optimized minified chunks served via Nginx.
+### 1. Register Account
+`POST /api/v1/auth/register`
+```json
+// Request
+{
+  "name": "Jane Developer",
+  "email": "jane@example.com",
+  "password": "SecurePassword123!"
+}
+
+// Response: 201 Created
+{
+  "message": "User registered successfully.",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "name": "Jane Developer",
+    "email": "jane@example.com",
+    "role": "customer"
+  }
+}
+```
+
+### 2. User Login
+`POST /api/v1/auth/login`
+```json
+// Request
+{
+  "email": "jane@example.com",
+  "password": "SecurePassword123!"
+}
+
+// Response: 200 OK
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "name": "Jane Developer",
+    "email": "jane@example.com",
+    "role": "customer"
+  }
+}
+```
+
+### 3. Create Event (Admin Only)
+`POST /api/v1/events` (Headers: `Authorization: Bearer <admin-jwt>`)
+```json
+// Request
+{
+  "title": "Cloud-Native Summit 2026",
+  "venue": "San Francisco Convention Center",
+  "description": "Annual cloud-native engineering conference covering Kubernetes, microservices, and observability.",
+  "start_at": "2026-11-15T09:00:00Z",
+  "end_at": "2026-11-16T18:00:00Z",
+  "status": "draft"
+}
+
+// Response: 201 Created
+{
+  "message": "Event created successfully.",
+  "event": {
+    "id": 4,
+    "title": "Cloud-Native Summit 2026",
+    "status": "draft",
+    "venue": "San Francisco Convention Center",
+    "start_at": "2026-11-15T09:00:00Z"
+  }
+}
+```
+
+### 4. Create Ticket Tier (Admin Only)
+`POST /api/v1/events/4/ticket-types` (Headers: `Authorization: Bearer <admin-jwt>`)
+```json
+// Request
+{
+  "name": "VIP Early Access",
+  "price": 199.99,
+  "capacity": 50,
+  "max_per_booking": 4
+}
+
+// Response: 201 Created
+{
+  "message": "Ticket type created successfully.",
+  "ticket_type": {
+    "id": 12,
+    "event_id": 4,
+    "name": "VIP Early Access",
+    "price": "199.99",
+    "capacity": 50,
+    "available": 50,
+    "max_per_booking": 4
+  }
+}
+```
+
+### 5. Create Booking Reservation (Customer)
+`POST /api/v1/bookings` (Headers: `Authorization: Bearer <customer-jwt>`)
+```json
+// Request
+{
+  "items": [
+    { "ticket_type_id": 12, "quantity": 2 }
+  ]
+}
+
+// Response: 201 Created
+{
+  "message": "Booking confirmed successfully.",
+  "booking": {
+    "id": 42,
+    "reference": "EF-7B8A9C1D",
+    "status": "confirmed",
+    "total_amount": "399.98",
+    "items": [
+      {
+        "id": 84,
+        "ticket_type_id": 12,
+        "ticket_type_name": "VIP Early Access",
+        "quantity": 2,
+        "unit_price": "199.99",
+        "subtotal": "399.98"
+      }
+    ],
+    "created_at": "2026-10-12T11:00:00Z"
+  }
+}
+```
+
+### 6. Cancel Booking Reservation (Customer or Admin)
+`POST /api/v1/bookings/42/cancel` (Headers: `Authorization: Bearer <jwt>`)
+```json
+// Response: 200 OK
+{
+  "message": "Booking EF-7B8A9C1D cancelled successfully. Tickets returned to inventory.",
+  "booking": {
+    "id": 42,
+    "reference": "EF-7B8A9C1D",
+    "status": "cancelled"
+  }
+}
+```
+
+### 7. Admin Dashboard Analytics
+`GET /api/v1/admin/dashboard` (Headers: `Authorization: Bearer <admin-jwt>`)
+```json
+// Response: 200 OK
+{
+  "stats": {
+    "total_revenue": "14589.50",
+    "total_tickets_sold": 184,
+    "total_events": 8,
+    "published_events": 6,
+    "total_bookings": 72,
+    "confirmed_bookings": 68,
+    "total_users": 150
+  },
+  "recent_bookings": [
+    {
+      "id": 42,
+      "reference": "EF-7B8A9C1D",
+      "user_id": 1,
+      "status": "confirmed",
+      "total_amount": "399.98",
+      "created_at": "2026-10-12T11:00:00Z"
+    }
+  ]
+}
+```
 
 ---
 
-## 8. Local Development & Getting Started
+## 8. Frontend Architecture & Design System
+
+The frontend is built using **React 18** and **Vite 6** without third-party CSS component frameworks, ensuring high performance, zero style bundle bloat, and total design control.
+
+### Design System Highlights
+- **Palette**: Deep slate dark theme (`--bg-dark: #070B14`, `--bg-primary: #0B1120`, `--bg-secondary: #111827`) with glowing brand accents (`--primary: #6366F1`, `--cyan: #06B6D4`).
+- **Glassmorphism**: Backdrop blur cards with subtle borders (`backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08)`).
+- **Typography**: Paired Google Fonts:
+  - **Outfit** (headings, bold, modern geometric sans)
+  - **Inter** (body, crisp readability)
+- **Micro-Animations**: Hover elevation shifts (`translateY(-4px)`), loading spinners, and modal scale animations.
+
+### Client Routing Hierarchy
+```
+/                      -> Landing (Public showcase)
+/events                -> Events (Public catalog with search)
+/events/:id            -> EventDetail (Ticket selector & instant checkout)
+/login                 -> Login (Session authentication)
+/register              -> Register (Customer creation)
+/dashboard             -> CustomerDashboard (Protected: Customer)
+/bookings              -> BookingHistory (Protected: Customer)
+/bookings/:id          -> BookingDetail (Protected: Customer receipt voucher)
+/admin/dashboard       -> AdminDashboard (Protected: Admin analytics)
+/admin/events          -> AdminEvents (Protected: Admin management)
+/admin/events/new      -> EventForm (Protected: Admin create)
+/admin/events/:id/edit -> EventForm (Protected: Admin edit)
+/admin/events/:id/tickets -> TicketManager (Protected: Admin ticket tier editor)
+/unauthorized          -> Unauthorized (403 message)
+*                      -> NotFound (404 message)
+```
+
+---
+
+## 9. Security, Hardening & Role-Based Access Control
+
+| Feature | Implementation | Description |
+|---|---|---|
+| **Password Storage** | `werkzeug.security` | Scrypt / PBKDF2 with SHA-256 and unique salts |
+| **Authentication** | `flask_jwt_extended` | Cryptographically signed HMAC-SHA256 JWT tokens |
+| **Token Expiry** | 1 Hour Access Tokens | Expired sessions automatically route users to `/login?expired=true` |
+| **Rate Limiting** | `flask_limiter` | 20 requests per minute on `/auth/*` to prevent brute force |
+| **Admin Privilege Isolation** | CLI-only bootstrap | Public registration **never** grants `admin` role. The admin account is created strictly via `flask create-admin` inside the secure host/container |
+| **Object-Level Privacy (IDOR)** | Owner validation | Attempting to access another user's booking via `/bookings/<id>` returns **404 Not Found** (not 403), preventing reference enumeration |
+| **Validation Layer** | Marshmallow | Strict validation of email structure, minimum 8-char passwords, positive integers, and valid date formats |
+
+---
+
+## 10. Local Development Guide (PowerShell & Make)
 
 ### Prerequisites
 - **Python 3.11+**
 - **Node.js 20+** and **npm 10+**
-- **PostgreSQL 15** (or Docker)
+- **PostgreSQL 15** running locally or in Docker
 
-### Quick Start via PowerShell (Recommended for Windows)
-EventFlow includes a native Windows PowerShell runner (`scripts/dev.ps1`) that requires no GNU `make`:
+### Step-by-Step Setup on Windows (Native PowerShell)
+
+EventFlow provides a dedicated PowerShell CLI runner (`scripts/dev.ps1`) that executes cleanly without needing `make.exe`:
 
 ```powershell
-# 1. Install all backend and frontend dependencies
+# 1. Clone repository
+git clone https://github.com/LonelyDreamer005/EventFlow.git
+cd EventFlow
+
+# 2. Install all dependencies (backend virtual environment + frontend node_modules)
 .\scripts\dev.ps1 install
 
-# 2. Configure environment variables
+# 3. Configure local environment variables
 Copy-Item .env.example .env
 Copy-Item backend\.env.example backend\.env
 
-# 3. Apply database migrations
+# 4. Apply database schema migrations
 .\scripts\dev.ps1 migrate
 
-# 4. Bootstrap an Administrator account
+# 5. Bootstrap an administrator account (Prompt will ask for name, email, password)
 .\scripts\dev.ps1 create-admin
 
-# 5. Start the backend Flask server (http://localhost:5000)
+# 6. Start the Flask backend API (http://localhost:5000)
 .\scripts\dev.ps1 run-backend
 
-# 6. In a separate terminal, start the frontend Vite server (http://localhost:3000)
+# 7. In a separate terminal, start the Vite frontend (http://localhost:3000)
 .\scripts\dev.ps1 run-frontend
 ```
 
-### Alternative Start via Makefile (Linux / macOS)
+### Setup on Linux / macOS (GNU Make)
+
 ```bash
+# 1. Install dependencies
 make install
+
+# 2. Configure environment
+cp .env.example .env
+cp backend/.env.example backend/.env
+
+# 3. Migrate and create admin
 make migrate
 make create-admin
+
+# 4. Start servers
 make run-backend
 make run-frontend
 ```
 
 ---
 
-## 9. Running the Automated Test Suite
+## 11. Automated Testing & Concurrency Verification
 
-EventFlow includes a pytest test suite covering unit logic, database integration, and concurrent row-locking safety:
+EventFlow includes a test suite configured via `pyproject.toml`.
 
+### Running Tests via PowerShell
 ```powershell
-# Run all tests
+# Run all test suites
 .\scripts\dev.ps1 test
-# Or using pytest directly
-pytest backend/tests -v
 
-# Run fast unit tests only
+# Run fast unit tests (no database required)
 .\scripts\dev.ps1 test-unit
 
-# Run PostgreSQL integration tests
+# Run database integration tests
 .\scripts\dev.ps1 test-integration
 
-# Run Concurrency Stress Tests (20 simultaneous threads competing for 5 tickets)
+# Run the 20-thread concurrency test (requires running PostgreSQL)
 .\scripts\dev.ps1 test-concurrency
 
-# Generate HTML Coverage Report
+# Generate HTML code coverage report
 .\scripts\dev.ps1 coverage
 ```
 
+### The 20-Thread Concurrency Verification Test
+Located in `backend/tests/test_concurrency.py`:
+- Initializes an event with a ticket tier of **capacity = 5**.
+- Spawns **20 simultaneous operating system threads** using Python's `threading.Thread`.
+- Each thread issues an immediate concurrent booking request for 1 ticket.
+- **Verification Assertions**:
+  1. Exactly 5 bookings are confirmed with status `confirmed`.
+  2. Remaining 15 threads receive 400 Bad Request / Insufficient Inventory.
+  3. Final database state asserts `available == 0` and total confirmed items equals 5.
+  4. Zero deadlocks and zero negative inventory records.
+
 ---
 
-## 10. Remaining DevOps Roadmap
+## 12. Troubleshooting & Frequently Asked Questions
 
-The foundation, backend, concurrency engine, frontend, and test suites are complete. The remaining phases will deliver cloud-native containerization, deployment, and monitoring:
+#### Q: PowerShell says `cannot be loaded because running scripts is disabled on this system`?
+**A**: Windows restricts script execution by default. Run:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+This enables script execution strictly for your current PowerShell terminal session.
 
-1. **Phase 6: Docker Containerization**
-   - Multi-stage `backend/Dockerfile` with non-root security user.
-   - Multi-stage `frontend/Dockerfile` building React and serving via Nginx.
-   - `docker-compose.yml` linking Postgres, Backend, and Frontend with healthcheck dependencies.
-2. **Phase 7: GitHub Actions CI/CD**
-   - `.github/workflows/ci.yml`: Automated PR quality gates (Ruff linting, pytest with PostgreSQL service container, coverage check).
-   - `.github/workflows/publish.yml`: Publish versioned Docker images to GitHub Container Registry (GHCR).
-3. **Phase 8: Kubernetes Deployment**
-   - Manifests in `k8s/`: PostgreSQL StatefulSet + PVC, Backend Deployment (2 replicas), Frontend Deployment, ClusterIP Services, and DB Migration Job.
-4. **Phase 9: Autoscaling & Resilience**
-   - Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization.
-   - k6 load test script (`scripts/k6-load-test.js`) triggering automatic pod scale-out.
-5. **Phase 10: Observability**
-   - Prometheus scrape config targeting `/metrics`.
-   - Grafana dashboard visualizing latency histograms, error rates, and booking throughput.
+#### Q: Why do concurrency tests require PostgreSQL instead of SQLite?
+**A**: SQLite operates with table-level locking in file mode and ignores `SELECT ... FOR UPDATE`. PostgreSQL is required to run the multi-threaded concurrency test suite because row-level locking is a PostgreSQL engine capability.
+
+#### Q: How do I access the Admin Dashboard?
+**A**: Run `.\scripts\dev.ps1 create-admin` in your terminal to create an admin user. Then log in at `http://localhost:3000/login`. The navigation bar will automatically display the **Admin Hub** link.
+
+#### Q: How is payment processed?
+**A**: To ensure simple deployment and zero external vendor dependencies, EventFlow uses a **simulated instant payment flow**. Booking creation reserves tickets and marks payment as settled immediately within the atomic transaction.
+
+---
+
+## 13. Upcoming DevOps Phases Roadmap
+
+The core application, concurrency engine, frontend, and tests are complete and pushed to GitHub. The remaining phases focus on deployment automation:
+
+### Phase 6: Docker Containerization
+- **Backend Dockerfile**: Multi-stage build based on `python:3.11-slim`, non-root user `appuser`, running Gunicorn on port 5000.
+- **Frontend Dockerfile**: Multi-stage build (Node 20 builder -> Nginx Alpine production image) serving on port 80.
+- **Docker Compose**: Orchestrates `db` (Postgres 15), `backend`, and `frontend` with healthcheck dependencies.
+
+### Phase 7: GitHub Actions CI/CD
+- **`ci.yml`**: Triggers on pull requests and pushes to `main`. Runs Ruff linting, Pytest test suites with PostgreSQL service containers, and enforces >= 80% coverage.
+- **`publish.yml`**: Builds production container images and publishes them with commit SHA tags to GitHub Container Registry (`ghcr.io`).
+
+### Phase 8: Kubernetes Deployment (Minikube / Cluster)
+- Complete declarative manifests in `k8s/`:
+  - `namespace.yaml`
+  - `configmap.yaml` & `secret.yaml.example`
+  - `postgres/`: StatefulSet, Service, PersistentVolumeClaim
+  - `jobs/db-migrate.yaml`: Pre-deployment database migration job
+  - `backend/`: Deployment with liveness/readiness probes, ClusterIP Service, HPA
+  - `frontend/`: Deployment and Service
+
+### Phase 9: Autoscaling & Resilience
+- **HPA**: Autoscales backend pods between 2 and 8 replicas based on CPU demand.
+- **k6 Load Testing**: Realistic flash-sale load testing script triggering automatic pod scaling.
+
+### Phase 10: Observability
+- Prometheus metrics scraping configuration.
+- Comprehensive Grafana dashboard tracking request rate, P95 latency, active DB connections, and booking conversions.
