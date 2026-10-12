@@ -1,0 +1,12 @@
+-r requirements.txt
+
+# Testing
+pytest==8.2.2
+pytest-cov==5.0.0
+pytest-xdist==3.5.0
+
+# Linting
+ruff==0.4.10
+
+# Development utilities
+httpie==3.2.3

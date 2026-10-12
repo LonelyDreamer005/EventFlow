@@ -1,0 +1,48 @@
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B008", "SIM117"]
+exclude = [
+    "migrations/",
+    "backend/migrations/",
+    ".venv/",
+    "venv/",
+    "__pycache__/",
+    "*.egg-info",
+]
+
+[tool.ruff.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: unit tests that use SQLite or mocks",
+    "integration: integration tests requiring PostgreSQL",
+    "concurrency: concurrent booking tests requiring PostgreSQL",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["backend/app"]
+omit = [
+    "backend/migrations/*",
+    "backend/tests/*",
+    "backend/app/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+]
+show_missing = true
