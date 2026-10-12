@@ -68,10 +68,12 @@ def create_app(config_name: str | None = None) -> Flask:
     # ── CLI commands ──────────────────────────────────────────────────────────
     _register_cli_commands(app)
 
-    # ── Auto-initialize SQLite tables in local dev if applicable ──────────────
-    if app.config.get("SQLALCHEMY_DATABASE_URI", "").startswith("sqlite"):
-        with app.app_context():
+    # ── Auto-initialize tables on startup if not present ──────────────────────
+    with app.app_context():
+        try:
             db.create_all()
+        except Exception:
+            pass
 
     return app
 
