@@ -160,8 +160,8 @@ EventFlow follows a structured 10-phase delivery plan. Below is the detailed tra
 | **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`8a1ed87`](https://github.com/LonelyDreamer005/EventFlow/commit/8a1ed87) |
 | **7** | **CI/CD Automation** | GitHub Actions workflows: `.github/workflows/ci.yml` (multi-job matrix: Ruff linting & formatting, Pytest suite with live PostgreSQL 15-alpine service, Frontend build, Docker build validation) & `.github/workflows/publish.yml` (automated GHCR image build & push with SHA & latest tags) | **DONE** | [`3c86b5a`](https://github.com/LonelyDreamer005/EventFlow/commit/3c86b5a) |
 | **8** | **Kubernetes Deployment** | Production declarative manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, DB migration pre-flight Job, Backend/Frontend Deployments & Services, and Kustomize orchestration | **DONE** | [`25d3f9a`](https://github.com/LonelyDreamer005/EventFlow/commit/25d3f9a) |
-| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 flash-sale load testing script, rolling update verification, and pod self-healing drills | **DONE** | [`cfe8ae4`](https://github.com/LonelyDreamer005/EventFlow/commit/cfe8ae4) |
-| **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **NEXT** | *Upcoming* |
+| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 flash-sale load testing script, rolling update verification, and pod self-healing drills | **DONE** | [`8c13455`](https://github.com/LonelyDreamer005/EventFlow/commit/8c13455) |
+| **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | **DONE** | [`10b854e`](https://github.com/LonelyDreamer005/EventFlow/commit/10b854e) |
 
 ---
 
@@ -890,6 +890,25 @@ The core application, concurrency engine, frontend, and tests are complete and p
     - `.\scripts\dev.ps1 load-test` — Executes k6 load test natively or through official Docker container.
     - `.\scripts\dev.ps1 hpa-status` — Streams live HPA metrics and replica count scaling.
 
-### Phase 10: Observability
-- Prometheus metrics scraping configuration.
-- Comprehensive Grafana dashboard tracking request rate, P95 latency, active DB connections, and booking conversions.
+### Phase 10: Platform Observability & Telemetry (Completed)
+- **Prometheus Metrics Engine**:
+  - **Kubernetes Architecture (`k8s/observability/prometheus.yaml`)**: Deploys Prometheus with high-frequency 5-second scraping intervals targeting `backend-service.eventflow.svc.cluster.local:5000/metrics`. Accessible on NodePort **`30090`**.
+  - **Docker Compose Architecture (`docker/prometheus.yml`)**: Standalone Prometheus container scraping `backend:5000/metrics` on host port **`9090`**.
+  - **Core Telemetry Metrics**:
+    - `http_requests_total`: Tracks request volume across methods, endpoints, and HTTP status codes.
+    - `http_request_duration_seconds_bucket`: Records execution time for P50, P90, P95, and P99 latency percentile histograms.
+    - `bookings_total`: Business conversion metric tracking atomic reservation outcomes (`confirmed`, `cancelled`).
+    - Python runtime metrics: `process_cpu_seconds_total`, `process_resident_memory_bytes`, `process_start_time_seconds`.
+- **Production Grafana Dashboard (`k8s/observability/grafana-dashboard.json`)**:
+  - Pre-configured dashboard featuring dark glassmorphic styling and real-time 5s auto-refresh.
+  - **Key Visualizations**:
+    1. *HTTP Request Throughput*: QPS breakdown by HTTP 2xx, 4xx, and 5xx response codes.
+    2. *Response Latency Percentiles*: Real-time PromQL curve plotting P50 median, P95 threshold, and P99 tail latency.
+    3. *Flash-Sale Booking Stats*: Visual stat cards for Total Confirmed and Total Cancelled reservations.
+    4. *Booking Transaction Velocity*: Real-time transactions/sec under load.
+    5. *Process Health & Resources*: Backend Memory RSS consumption and CPU core utilization.
+  - **Deployment**: Automatic datasource provisioning in Kubernetes (`k8s/observability/grafana.yaml` on NodePort **`30300`**) and Docker Compose (`http://localhost:3001`, default credentials: `admin` / `admin123`).
+- **PowerShell Runner Commands**:
+  - `.\scripts\dev.ps1 obs-up` — Starts Prometheus (port 9090) and Grafana (port 3001) in Docker.
+  - `.\scripts\dev.ps1 obs-status` — Verifies container health for the observability stack.
+  - `.\scripts\dev.ps1 obs-down` — Stops monitoring containers.
