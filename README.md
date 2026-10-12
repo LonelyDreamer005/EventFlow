@@ -158,9 +158,9 @@ EventFlow follows a structured 10-phase delivery plan. Below is the detailed tra
 | **4** | **Frontend Application** | React 18 + Vite SPA, glassmorphic dark design system (`index.css`), Axios interceptors, `AuthContext`, customer portal, interactive ticket selector, booking vouchers, and admin hub | **DONE** | [`c850295`](https://github.com/LonelyDreamer005/EventFlow/commit/c850295) |
 | **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`c80ee4a`](https://github.com/LonelyDreamer005/EventFlow/commit/c80ee4a) |
 | **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`8a1ed87`](https://github.com/LonelyDreamer005/EventFlow/commit/8a1ed87) |
-| **7** | **CI/CD Automation** | GitHub Actions workflows: `.github/workflows/ci.yml` (multi-job matrix: Ruff linting & formatting, Pytest suite with live PostgreSQL 15-alpine service, Frontend build, Docker build validation) & `.github/workflows/publish.yml` (automated GHCR image build & push with SHA & latest tags) | **DONE** | [`98c11d9`](https://github.com/LonelyDreamer005/EventFlow/commit/98c11d9) |
-| **8** | **Kubernetes Deployment** | Production manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, Backend/Frontend Deployments & Services, and DB migration Job | ⏳ **NEXT** | *Upcoming* |
-| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **PENDING** | *Upcoming* |
+| **7** | **CI/CD Automation** | GitHub Actions workflows: `.github/workflows/ci.yml` (multi-job matrix: Ruff linting & formatting, Pytest suite with live PostgreSQL 15-alpine service, Frontend build, Docker build validation) & `.github/workflows/publish.yml` (automated GHCR image build & push with SHA & latest tags) | **DONE** | [`3c86b5a`](https://github.com/LonelyDreamer005/EventFlow/commit/3c86b5a) |
+| **8** | **Kubernetes Deployment** | Production declarative manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, DB migration pre-flight Job, Backend/Frontend Deployments & Services, and Kustomize orchestration | **DONE** | [`0474206`](https://github.com/LonelyDreamer005/EventFlow/commit/0474206) |
+| **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **NEXT** | *Upcoming* |
 | **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **PENDING** | *Upcoming* |
 
 ---
@@ -860,14 +860,19 @@ The core application, concurrency engine, frontend, and tests are complete and p
     - `ghcr.io/<owner>/eventflow-frontend:latest` and `:sha-<hash>`
 - **Local Developer Workflow**: Integrated commands in `.\scripts\dev.ps1` (`lint`, `lint-fix`, `test`, `test-unit`, `test-integration`, `test-concurrency`).
 
-### Phase 8: Kubernetes Deployment (Minikube / Cluster)
-- Complete declarative manifests in `k8s/`:
-  - `namespace.yaml`
-  - `configmap.yaml` & `secret.yaml.example`
-  - `postgres/`: StatefulSet, Service, PersistentVolumeClaim
-  - `jobs/db-migrate.yaml`: Pre-deployment database migration job
-  - `backend/`: Deployment with liveness/readiness probes, ClusterIP Service, HPA
-  - `frontend/`: Deployment and Service
+### Phase 8: Kubernetes Deployment (Completed)
+- **Declarative Architecture (`k8s/`)**:
+  - **Namespace (`k8s/namespace.yaml`)**: Isolated `eventflow` namespace with standard Kubernetes labels.
+  - **Configuration (`k8s/configmap.yaml` & `k8s/secrets.yaml.example`)**: Separates non-sensitive environment configuration from cryptographic secrets and database connection strings.
+  - **Database Persistence (`k8s/postgres/`)**: Single-replica PostgreSQL 15 `StatefulSet` with dedicated `PersistentVolumeClaim` (2Gi storage), `pg_isready` readiness/liveness probes, and ClusterIP `postgres-service`.
+  - **Database Pre-flight Migration Job (`k8s/jobs/db-migrate.yaml`)**: Runs prior to backend deployment. Features a `wait-for-postgres` initContainer that polls for DB availability before executing schema initialization (`db.create_all()`) and sample event seeding (`flask seed-events`).
+  - **Backend Layer (`k8s/backend/`)**: 2-replica `Deployment` with zero-downtime `RollingUpdate` strategy, CPU/memory requests and limits, liveness and readiness probes hitting `/health`, and ClusterIP `backend-service` (port 5000).
+  - **Frontend Layer (`k8s/frontend/`)**: 2-replica Nginx SPA `Deployment` with rolling updates, resource boundaries, health probes hitting `/`, and `frontend-service` exposed via `NodePort` on port `30080`.
+  - **Kustomize Orchestration (`k8s/kustomization.yaml`)**: Bundles all manifests for declarative, single-command deployment: `kubectl apply -k k8s/`.
+- **PowerShell Runner Commands**:
+  - `.\scripts\dev.ps1 k8s-apply` — Bootstraps namespace, secrets, and applies Kustomize manifests.
+  - `.\scripts\dev.ps1 k8s-status` — Inspects all running pods, services, and PVCs in `eventflow`.
+  - `.\scripts\dev.ps1 k8s-delete` — Clean teardown of all Kubernetes resources.
 
 ### Phase 9: Autoscaling & Resilience
 - **HPA**: Autoscales backend pods between 2 and 8 replicas based on CPU demand.
