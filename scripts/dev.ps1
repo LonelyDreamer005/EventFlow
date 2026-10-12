@@ -20,6 +20,8 @@ param (
         "docker-up",
         "docker-down",
         "docker-reset",
+        "docker-logs",
+        "docker-status",
         "clean"
     )]
     [string]$Command = "help"
@@ -46,9 +48,12 @@ function Show-Help {
     Write-Host "  frontend-build     Build production React/Vite bundle"
     Write-Host "  migrate            Apply database schema migrations"
     Write-Host "  create-admin       Create admin user via Flask CLI"
+    Write-Host "  docker-build       Build Docker container images"
     Write-Host "  docker-up          Start all services via Docker Compose"
-    Write-Host "  docker-down        Stop services"
+    Write-Host "  docker-down        Stop Docker services"
     Write-Host "  docker-reset       Stop services and remove database volumes"
+    Write-Host "  docker-logs        Stream live Docker container logs"
+    Write-Host "  docker-status      Show running Docker container statuses"
     Write-Host "  clean              Remove Python caches and build artifacts"
     Write-Host ""
 }
@@ -154,6 +159,16 @@ switch ($Command) {
     "docker-reset" {
         Write-Warning "This removes all EventFlow Docker volumes and database data!"
         docker compose down -v
+    }
+
+    "docker-logs" {
+        Write-Host "--> Streaming Docker container logs..." -ForegroundColor Cyan
+        docker compose logs -f
+    }
+
+    "docker-status" {
+        Write-Host "--> Docker container status..." -ForegroundColor Cyan
+        docker compose ps
     }
 
     "clean" {
