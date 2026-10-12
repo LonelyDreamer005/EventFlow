@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/DevOps-Course%20Project-orange?logo=githubactions&logoColor=white" alt="DevOps Course Project" />
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11" />
   <img src="https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white" alt="Flask 3.0" />
   <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 15" />
@@ -16,22 +17,26 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License MIT" />
 </p>
 
+> [!NOTE]
+> **DevOps Course Project Context**: This project was developed as a comprehensive **DevOps Course-Based Project** (B.Tech Computer Science and Engineering - Cloud-Native DevOps curriculum). It demonstrates the complete, end-to-end software delivery lifecycle (SDLC) - including domain-driven backend architecture, transactional row-level concurrency locking, a cinematic React SPA, containerization, automated testing quality gates, Kubernetes manifests, autoscaling with HPA, and real-time Prometheus observability.
+
 ---
 
 ## Table of Contents
 1. [Project Overview & Engineering Highlights](#1-project-overview--engineering-highlights)
-2. [Master Project Roadmap: Plan vs. Current Progress](#2-master-project-roadmap-plan-vs-current-progress)
-3. [Deep Dive: Concurrency Control & Inventory Safety](#3-deep-dive-concurrency-control--inventory-safety)
-4. [System Architecture & Data Flows](#4-system-architecture--data-flows)
-5. [Database Entity-Relationship Model](#5-database-entity-relationship-model)
-6. [Complete Repository Structure](#6-complete-repository-structure)
-7. [API Specification & Example Payloads](#7-api-specification--example-payloads)
-8. [Frontend Architecture, Design System & UI Testing Guide](#8-frontend-architecture--design-system)
-9. [Security, Hardening & Role-Based Access Control](#9-security-hardening--role-based-access-control)
-10. [Local Development Guide (PowerShell & Make)](#10-local-development-guide-powershell--make)
-11. [Automated Testing & Concurrency Verification](#11-automated-testing--concurrency-verification)
-12. [Troubleshooting & Frequently Asked Questions](#12-troubleshooting--frequently-asked-questions)
-13. [Upcoming DevOps Phases Roadmap](#13-upcoming-devops-phases-roadmap)
+2. [Quick Start: How to Open the UI and Server](#2-quick-start-how-to-open-the-ui-and-server)
+3. [Master Project Roadmap: Plan vs. Current Progress](#3-master-project-roadmap-plan-vs-current-progress)
+4. [Deep Dive: Concurrency Control & Inventory Safety](#4-deep-dive-concurrency-control--inventory-safety)
+5. [System Architecture & Data Flows](#5-system-architecture--data-flows)
+6. [Database Entity-Relationship Model](#6-database-entity-relationship-model)
+7. [Complete Repository Structure](#7-complete-repository-structure)
+8. [API Specification & Example Payloads](#8-api-specification--example-payloads)
+9. [Frontend Architecture, Design System & UI Testing Guide](#9-frontend-architecture--design-system)
+10. [Security, Hardening & Role-Based Access Control](#10-security-hardening--role-based-access-control)
+11. [Local Development Guide (PowerShell & Make)](#11-local-development-guide-powershell--make)
+12. [Automated Testing & Concurrency Verification](#12-automated-testing--concurrency-verification)
+13. [Troubleshooting & Frequently Asked Questions](#13-troubleshooting--frequently-asked-questions)
+14. [Upcoming DevOps Phases Roadmap](#14-upcoming-devops-phases-roadmap)
 
 ---
 
@@ -57,7 +62,71 @@ EventFlow implements **Pessimistic Row-Level Locking** powered by PostgreSQL's `
 
 ---
 
-## 2. Master Project Roadmap: Plan vs. Current Progress
+## 2. Quick Start: How to Open the UI and Server
+
+To run the complete full-stack application locally, you open two terminal windows (one for the backend API server, and one for the frontend UI):
+
+### Terminal 1: Start the Backend Server (Flask REST API)
+From the project root directory (`d:\BookingLite`):
+
+- **On Windows (PowerShell)**:
+  ```powershell
+  # 1. Install backend dependencies (first time only)
+  pip install -r backend/requirements.txt
+
+  # 2. Start the Flask API server
+  .\scripts\dev.ps1 run-backend
+  ```
+- **On Linux / macOS**:
+  ```bash
+  make run-backend
+  ```
+- **Direct command alternative**:
+  ```bash
+  flask --app backend/wsgi.py run --host=0.0.0.0 --port=5000
+  ```
+
+#### Backend Access Endpoints:
+- **API Root**: [http://localhost:5000/api/v1](http://localhost:5000/api/v1)
+- **Health Check Probe**: [http://localhost:5000/health](http://localhost:5000/health) *(returns `{"status": "ok", "db": "healthy"}`)*
+- **Prometheus Metrics Target**: [http://localhost:5000/metrics](http://localhost:5000/metrics)
+
+---
+
+### Terminal 2: Start the Frontend UI (React + Vite)
+In a second terminal window from the project root:
+
+- **On Windows (PowerShell)**:
+  ```powershell
+  # 1. Install frontend packages (first time only)
+  npm --prefix frontend install
+
+  # 2. Start the Vite dev server
+  .\scripts\dev.ps1 run-frontend
+  ```
+- **On Linux / macOS**:
+  ```bash
+  make run-frontend
+  ```
+- **Direct command alternative**:
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+
+#### Frontend Access URL:
+- **Open in your browser**: **[http://localhost:3000](http://localhost:3000)**
+
+---
+
+### How the Frontend and Backend Communicate
+- The frontend Vite server runs on **port 3000** and has an automatic reverse proxy configured in `frontend/vite.config.js`.
+- All client network requests to `/api/*` and `/health` are automatically proxied to **`http://localhost:5000`** in the background.
+- You can navigate and test the application directly in your browser at **`http://localhost:3000`** without any CORS configuration needed.
+
+---
+
+## 3. Master Project Roadmap: Plan vs. Current Progress
 
 EventFlow follows a structured 10-phase delivery plan. Below is the detailed tracking of each phase:
 
