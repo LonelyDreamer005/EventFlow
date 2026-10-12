@@ -17,6 +17,8 @@ param (
         "frontend-build",
         "migrate",
         "create-admin",
+        "list-users",
+        "list-bookings",
         "docker-build",
         "docker-up",
         "docker-down",
@@ -58,6 +60,8 @@ function Show-Help {
     Write-Host "  frontend-build     Build production React/Vite bundle"
     Write-Host "  migrate            Apply database schema migrations"
     Write-Host "  create-admin       Create admin user via Flask CLI"
+    Write-Host "  list-users         Display all registered users in database"
+    Write-Host "  list-bookings      Display all bookings and order totals in database"
     Write-Host "  docker-build       Build Docker container images"
     Write-Host "  docker-up          Start all services via Docker Compose"
     Write-Host "  docker-down        Stop Docker services"
@@ -164,6 +168,26 @@ switch ($Command) {
         $env:FLASK_APP = (Join-Path $ProjectRoot "backend\wsgi.py")
         $env:PYTHONPATH = (Join-Path $ProjectRoot "backend")
         flask create-admin
+    }
+
+    "list-users" {
+        Write-Host "--> Registered Users:" -ForegroundColor Cyan
+        $dbPath = (Join-Path $ProjectRoot "backend\instance\eventflow.db")
+        if (Test-Path $dbPath) {
+            python -c "import sqlite3; conn=sqlite3.connect(r'$dbPath'); cur=conn.cursor(); rows=cur.execute('SELECT id, name, email, role, created_at FROM users').fetchall(); [print(f'  ID: {r[0]} | Name: {r[1]} | Email: {r[2]} | Role: {r[3]} | Joined: {r[4]}') for r in rows]"
+        } else {
+            Write-Warning "Database file not found at $dbPath"
+        }
+    }
+
+    "list-bookings" {
+        Write-Host "--> Recent Bookings:" -ForegroundColor Cyan
+        $dbPath = (Join-Path $ProjectRoot "backend\instance\eventflow.db")
+        if (Test-Path $dbPath) {
+            python -c "import sqlite3; conn=sqlite3.connect(r'$dbPath'); cur=conn.cursor(); rows=cur.execute('SELECT b.id, u.name, b.status, b.total_amount, b.created_at FROM bookings b JOIN users u ON b.user_id = u.id').fetchall(); [print(f'  Booking #{r[0]} | User: {r[1]} | Status: {r[2]} | Total: `${r[3]} | Time: {r[4]}') for r in rows]"
+        } else {
+            Write-Warning "Database file not found at $dbPath"
+        }
     }
 
     "docker-build" {
