@@ -156,9 +156,9 @@ EventFlow follows a structured 10-phase delivery plan. Below is the detailed tra
 | **2** | **Backend Architecture & APIs** | Flask factory, Dev/Test/Prod configs, SQLAlchemy models (`User`, `Event`, `TicketType`, `Booking`, `BookingItem`), Marshmallow schemas, REST endpoints under `/api/v1`, and role-based decorators (`@admin_required`, `@customer_required`) | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
 | **3** | **Reservation Correctness** | Concurrency engine in `booking_service.py` using `SELECT ... FOR UPDATE`, atomic stock deductions, double-cancel protection, frozen pricing, and Prometheus metrics emission | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
 | **4** | **Frontend Application** | React 18 + Vite SPA, glassmorphic dark design system (`index.css`), Axios interceptors, `AuthContext`, customer portal, interactive ticket selector, booking vouchers, and admin hub | **DONE** | [`c850295`](https://github.com/LonelyDreamer005/EventFlow/commit/c850295) |
-| **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
-| **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | ⏳ **NEXT** | *In Progress* |
-| **7** | **CI/CD Automation** | GitHub Actions `.github/workflows/ci.yml` (quality gates: Ruff lint, Pytest with PostgreSQL service, coverage >= 80%) & `publish.yml` (build and push container images to GHCR) | ⏳ **PENDING** | *Upcoming* |
+| **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`c80ee4a`](https://github.com/LonelyDreamer005/EventFlow/commit/c80ee4a) |
+| **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`d3887ba`](https://github.com/LonelyDreamer005/EventFlow/commit/d3887ba) |
+| **7** | **CI/CD Automation** | GitHub Actions `.github/workflows/ci.yml` (quality gates: Ruff lint, Pytest with PostgreSQL service, coverage >= 80%) & `publish.yml` (build and push container images to GHCR) | ⏳ **NEXT** | *In Progress* |
 | **8** | **Kubernetes Deployment** | Production manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, Backend/Frontend Deployments & Services, and DB migration Job | ⏳ **PENDING** | *Upcoming* |
 | **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **PENDING** | *Upcoming* |
 | **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **PENDING** | *Upcoming* |
@@ -840,10 +840,11 @@ Once logged in, the top navigation bar will automatically display the **Admin Hu
 
 The core application, concurrency engine, frontend, and tests are complete and pushed to GitHub. The remaining phases focus on deployment automation:
 
-### Phase 6: Docker Containerization
-- **Backend Dockerfile**: Multi-stage build based on `python:3.11-slim`, non-root user `appuser`, running Gunicorn on port 5000.
-- **Frontend Dockerfile**: Multi-stage build (Node 20 builder -> Nginx Alpine production image) serving on port 80.
-- **Docker Compose**: Orchestrates `db` (Postgres 15), `backend`, and `frontend` with healthcheck dependencies.
+### Phase 6: Docker Containerization (Completed)
+- **Backend Dockerfile**: Multi-stage build (`python:3.11-slim`), non-root user `appuser`, running Gunicorn on port 5000 with `/health` curl probe.
+- **Frontend Dockerfile**: Multi-stage build (`node:20-alpine` -> `nginx:1.27-alpine`), custom reverse proxy, SPA fallback, and `/` probe.
+- **Docker Compose**: Orchestrates `db` (Postgres 15-alpine), `backend`, and `frontend` with healthcheck dependencies, named volume `postgres_data`, and bridge network `eventflow_network`.
+- **CLI Commands**: `.\scripts\dev.ps1 docker-up`, `docker-down`, `docker-logs`, `docker-status`, and `docker-reset`.
 
 ### Phase 7: GitHub Actions CI/CD
 - **`ci.yml`**: Triggers on pull requests and pushes to `main`. Runs Ruff linting, Pytest test suites with PostgreSQL service containers, and enforces >= 80% coverage.
