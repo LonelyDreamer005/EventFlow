@@ -157,9 +157,9 @@ EventFlow follows a structured 10-phase delivery plan. Below is the detailed tra
 | **3** | **Reservation Correctness** | Concurrency engine in `booking_service.py` using `SELECT ... FOR UPDATE`, atomic stock deductions, double-cancel protection, frozen pricing, and Prometheus metrics emission | **DONE** | [`71ecde7`](https://github.com/LonelyDreamer005/EventFlow/commit/71ecde7) |
 | **4** | **Frontend Application** | React 18 + Vite SPA, glassmorphic dark design system (`index.css`), Axios interceptors, `AuthContext`, customer portal, interactive ticket selector, booking vouchers, and admin hub | **DONE** | [`c850295`](https://github.com/LonelyDreamer005/EventFlow/commit/c850295) |
 | **5** | **Automated Test Suite** | Full `pytest` suite: unit tests (auth, models), integration tests (events, bookings, cancellation), and PostgreSQL concurrency stress tests (20 threads competing for 5 tickets) | **DONE** | [`c80ee4a`](https://github.com/LonelyDreamer005/EventFlow/commit/c80ee4a) |
-| **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`d3887ba`](https://github.com/LonelyDreamer005/EventFlow/commit/d3887ba) |
-| **7** | **CI/CD Automation** | GitHub Actions `.github/workflows/ci.yml` (quality gates: Ruff lint, Pytest with PostgreSQL service, coverage >= 80%) & `publish.yml` (build and push container images to GHCR) | ⏳ **NEXT** | *In Progress* |
-| **8** | **Kubernetes Deployment** | Production manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, Backend/Frontend Deployments & Services, and DB migration Job | ⏳ **PENDING** | *Upcoming* |
+| **6** | **Containerization** | Multi-stage `backend/Dockerfile` with non-root user, multi-stage `frontend/Dockerfile` with Nginx, `docker-compose.yml` with health check orchestration and volume persistence | **DONE** | [`8a1ed87`](https://github.com/LonelyDreamer005/EventFlow/commit/8a1ed87) |
+| **7** | **CI/CD Automation** | GitHub Actions workflows: `.github/workflows/ci.yml` (multi-job matrix: Ruff linting & formatting, Pytest suite with live PostgreSQL 15-alpine service, Frontend build, Docker build validation) & `.github/workflows/publish.yml` (automated GHCR image build & push with SHA & latest tags) | **DONE** | [`98c11d9`](https://github.com/LonelyDreamer005/EventFlow/commit/98c11d9) |
+| **8** | **Kubernetes Deployment** | Production manifests in `k8s/`: Namespace, ConfigMaps, Secrets, Postgres StatefulSet + PVC, Backend/Frontend Deployments & Services, and DB migration Job | ⏳ **NEXT** | *Upcoming* |
 | **9** | **Autoscaling & Resilience** | Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization, k6 load testing scripts, rolling update verification, and pod self-healing drills | ⏳ **PENDING** | *Upcoming* |
 | **10** | **Observability** | Prometheus scraping configuration for `/metrics`, pre-configured Grafana dashboard JSON (latency percentiles, request volume, booking conversion rates) | ⏳ **PENDING** | *Upcoming* |
 
@@ -846,9 +846,19 @@ The core application, concurrency engine, frontend, and tests are complete and p
 - **Docker Compose**: Orchestrates `db` (Postgres 15-alpine), `backend`, and `frontend` with healthcheck dependencies, named volume `postgres_data`, and bridge network `eventflow_network`.
 - **CLI Commands**: `.\scripts\dev.ps1 docker-up`, `docker-down`, `docker-logs`, `docker-status`, and `docker-reset`.
 
-### Phase 7: GitHub Actions CI/CD
-- **`ci.yml`**: Triggers on pull requests and pushes to `main`. Runs Ruff linting, Pytest test suites with PostgreSQL service containers, and enforces >= 80% coverage.
-- **`publish.yml`**: Builds production container images and publishes them with commit SHA tags to GitHub Container Registry (`ghcr.io`).
+### Phase 7: GitHub Actions CI/CD Pipeline (Completed)
+- **Continuous Integration Pipeline (`.github/workflows/ci.yml`)**:
+  - **`backend-lint`**: Strict automated code quality gates checking Python syntax, imports, and formatting using `ruff check` and `ruff format --check`.
+  - **`backend-test`**: Spawns isolated `postgres:15-alpine` service container with active health checking, executing the full 55-test Pytest suite with code coverage enforcement (`pytest --cov=backend/app --cov-report=xml`).
+  - **`frontend-build`**: Sets up Node.js 20 with package caching, installing dependencies (`npm ci`) and executing production Vite asset compilation (`npm run build`).
+  - **`docker-validate`**: Verifies that both multi-stage Dockerfiles (`backend` and `frontend`) assemble cleanly without layer caching issues.
+- **Image Publishing Automation (`.github/workflows/publish.yml`)**:
+  - Triggers on merges to `main` and release tags (`v*.*.*`).
+  - Builds and signs container images with Docker Buildx and GitHub Actions cache (`type=gha`).
+  - Publishes production-ready images directly to GitHub Container Registry (`ghcr.io`):
+    - `ghcr.io/<owner>/eventflow-backend:latest` and `:sha-<hash>`
+    - `ghcr.io/<owner>/eventflow-frontend:latest` and `:sha-<hash>`
+- **Local Developer Workflow**: Integrated commands in `.\scripts\dev.ps1` (`lint`, `lint-fix`, `test`, `test-unit`, `test-integration`, `test-concurrency`).
 
 ### Phase 8: Kubernetes Deployment (Minikube / Cluster)
 - Complete declarative manifests in `k8s/`:
