@@ -12,7 +12,7 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "SIM117"]
+ignore = ["E501", "B008", "SIM117", "E402"]
 
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/*" = ["E402"]

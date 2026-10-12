@@ -5,6 +5,7 @@ Used by: flask run (dev), gunicorn (prod), tests
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Ensure backend directory is in python search path
