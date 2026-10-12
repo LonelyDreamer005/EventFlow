@@ -126,6 +126,26 @@ In a second terminal window from the project root:
 
 ---
 
+### Default Administrator Login Credentials (Local Dev / UI Testing)
+
+For immediate testing of the Admin Hub, Event Creation, and Analytics, the local development database comes pre-seeded with an administrator account:
+
+| Credential Field | Value | Description |
+|---|---|---|
+| **Sign-In URL** | **[http://localhost:3000/login](http://localhost:3000/login)** | Authentication page |
+| **Email** | `admin@eventflow.dev` | Seeded admin account |
+| **Password** | `Admin1234!` | Pre-configured admin password |
+| **Role** | `admin` | Unlocks **Admin Hub**, Event Management (`/admin/events`), New Event Form (`/admin/events/new`), and Ticket Tier Manager |
+
+> [!TIP]
+> **Need a custom admin account?** You can also bootstrap a custom administrator anytime via the PowerShell runner:
+> ```powershell
+> .\scripts\dev.ps1 create-admin
+> ```
+> Follow the interactive prompt to supply your desired name, email, and password.
+
+---
+
 ## 3. Master Project Roadmap: Plan vs. Current Progress
 
 EventFlow follows a structured 10-phase delivery plan. Below is the detailed tracking of each phase:
@@ -665,7 +685,14 @@ You can launch and test the frontend UI in your browser with **one single comman
 - **Booking Voucher** (`/bookings/1`): Test itemized tickets table, simulated instant settlement, and printable receipt.
 - **Admin Hub** (`/admin/dashboard` & `/admin/events`): Test KPI metric cards, event forms, and ticket tier quota management.
 
-#### 4. Verifying Production Bundle
+#### 4. Pre-Seeded Accounts for Testing
+
+| Account Type | Email | Password | Access & Testing Capabilities |
+|---|---|---|---|
+| **Administrator** | `admin@eventflow.dev` | `Admin1234!` | Full access to Admin Hub, Event Management (`/admin/events`), Create Event (`/admin/events/new`), Ticket Tiers, and Platform Analytics |
+| **Customer** | *Self-register at `/register`* | *Custom* | Event discovery, interactive booking, printable ticket stub vouchers, and order cancellation |
+
+#### 5. Verifying Production Bundle
 To build and test the minified production bundle served by Vite:
 ```powershell
 .\scripts\dev.ps1 frontend-build
@@ -793,7 +820,16 @@ This enables script execution strictly for your current PowerShell terminal sess
 **A**: SQLite operates with table-level locking in file mode and ignores `SELECT ... FOR UPDATE`. PostgreSQL is required to run the multi-threaded concurrency test suite because row-level locking is a PostgreSQL engine capability.
 
 #### Q: How do I access the Admin Dashboard?
-**A**: Run `.\scripts\dev.ps1 create-admin` in your terminal to create an admin user. Then log in at `http://localhost:3000/login`. The navigation bar will automatically display the **Admin Hub** link.
+**A**: You can immediately sign in using the pre-seeded local development administrator credentials:
+- **Login URL**: [http://localhost:3000/login](http://localhost:3000/login)
+- **Email**: `admin@eventflow.dev`
+- **Password**: `Admin1234!`
+
+Alternatively, you can bootstrap a custom administrator anytime by running:
+```powershell
+.\scripts\dev.ps1 create-admin
+```
+Once logged in, the top navigation bar will automatically display the **Admin Hub** link (`/admin/dashboard`, `/admin/events`, `/admin/events/new`).
 
 #### Q: How is payment processed?
 **A**: To ensure simple deployment and zero external vendor dependencies, EventFlow uses a **simulated instant payment flow**. Booking creation reserves tickets and marks payment as settled immediately within the atomic transaction.
