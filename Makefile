@@ -1,92 +1,90 @@
 # =============================================================================
 # EventFlow — Makefile
-# Provides convenient developer commands.
-# Requires make (install via Chocolatey: choco install make)
-# On Windows without make, use the equivalent PowerShell scripts in scripts/
+# Cross-platform developer commands.
+# Compatible with Linux, macOS, and Windows (without relying on Unix shell '&&').
+# On Windows, you can also use PowerShell natively: .\scripts\dev.ps1 <command>
 # =============================================================================
 
 .PHONY: help install install-dev lint test test-unit test-integration \
-        coverage run-backend run-frontend docker-build docker-up docker-down \
-        migrate create-admin clean
+        test-concurrency coverage run-backend run-frontend frontend-build \
+        docker-build docker-up docker-down docker-reset migrate create-admin clean
 
 # Default target
 help:
-	@echo "EventFlow — Available commands:"
-	@echo ""
-	@echo "  Development:"
-	@echo "    make install          Install backend + frontend dependencies"
-	@echo "    make install-dev      Install backend dev dependencies"
-	@echo "    make lint             Run ruff linter on backend"
-	@echo "    make test             Run all backend tests"
-	@echo "    make test-unit        Run backend unit tests only"
-	@echo "    make test-integration Run backend integration tests (needs PostgreSQL)"
-	@echo "    make coverage         Run tests with HTML coverage report"
-	@echo "    make run-backend      Start Flask dev server"
-	@echo "    make run-frontend     Start Vite dev server"
-	@echo ""
-	@echo "  Database:"
-	@echo "    make migrate          Run Flask-Migrate upgrade"
-	@echo "    make create-admin     Prompt to create admin user via CLI"
-	@echo ""
-	@echo "  Docker:"
-	@echo "    make docker-build     Build all Docker images"
-	@echo "    make docker-up        Start all services via Docker Compose"
-	@echo "    make docker-down      Stop services (preserve data)"
-	@echo "    make docker-reset     Stop services AND remove volumes (destructive)"
-	@echo ""
-	@echo "  Cleanup:"
-	@echo "    make clean            Remove Python caches and build artifacts"
+	@echo EventFlow - Available commands:
+	@echo.
+	@echo   Development:
+	@echo     make install          Install backend + frontend dependencies
+	@echo     make install-dev      Install backend dev dependencies
+	@echo     make lint             Run ruff linter on backend
+	@echo     make test             Run all backend tests
+	@echo     make test-unit        Run backend unit tests only
+	@echo     make test-integration Run backend integration tests (needs PostgreSQL)
+	@echo     make test-concurrency Run concurrency stress tests
+	@echo     make coverage         Run tests with coverage report
+	@echo     make run-backend      Start Flask dev server
+	@echo     make run-frontend     Start Vite dev server
+	@echo.
+	@echo   Database:
+	@echo     make migrate          Run Flask-Migrate upgrade
+	@echo     make create-admin     Prompt to create admin user via CLI
+	@echo.
+	@echo   Docker:
+	@echo     make docker-build     Build all Docker images
+	@echo     make docker-up        Start all services via Docker Compose
+	@echo     make docker-down      Stop services (preserve data)
+	@echo     make docker-reset     Stop services AND remove volumes (destructive)
+	@echo.
+	@echo   Cleanup:
+	@echo     make clean            Remove Python caches and build artifacts
 
 # ─── Install ─────────────────────────────────────────────────────────────────
 install:
-	cd backend && pip install -r requirements.txt
-	cd frontend && npm ci
+	pip install -r backend/requirements.txt
+	npm --prefix frontend install
 
 install-dev:
-	cd backend && pip install -r requirements-dev.txt
-	cd frontend && npm ci
+	pip install -r backend/requirements-dev.txt
+	npm --prefix frontend install
 
 # ─── Lint ────────────────────────────────────────────────────────────────────
 lint:
-	cd backend && ruff check app/ tests/
-	cd frontend && npm run lint
+	ruff check backend/app backend/tests
+	npm --prefix frontend run lint
 
 # ─── Tests ───────────────────────────────────────────────────────────────────
 test:
-	cd backend && python -m pytest -v
+	python -m pytest backend/tests -v
 
 test-unit:
-	cd backend && python -m pytest -v -m unit
+	python -m pytest backend/tests -v -m unit
 
 test-integration:
-	cd backend && python -m pytest -v -m integration
+	python -m pytest backend/tests -v -m integration
 
 test-concurrency:
-	cd backend && python -m pytest -v -m concurrency
+	python -m pytest backend/tests -v -m concurrency
 
 coverage:
-	cd backend && python -m pytest --cov=app --cov-report=html --cov-report=term-missing
-	@echo "Coverage report: backend/htmlcov/index.html"
-
-frontend-test:
-	cd frontend && npm run test
+	python -m pytest --cov=backend/app --cov-report=html --cov-report=term-missing backend/tests
+	@echo Coverage report generated at backend/htmlcov/index.html
 
 frontend-build:
-	cd frontend && npm run build
+	npm --prefix frontend run build
 
 # ─── Run locally ─────────────────────────────────────────────────────────────
 run-backend:
-	cd backend && flask run --host=0.0.0.0 --port=5000
+	flask --app backend/wsgi.py run --host=0.0.0.0 --port=5000
 
 run-frontend:
-	cd frontend && npm run dev
+	npm --prefix frontend run dev
 
 # ─── Database ────────────────────────────────────────────────────────────────
 migrate:
-	cd backend && flask db upgrade
+	flask --app backend/wsgi.py db upgrade
 
 create-admin:
-	cd backend && flask create-admin
+	flask --app backend/wsgi.py create-admin
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
 docker-build:
@@ -99,7 +97,7 @@ docker-down:
 	docker compose down
 
 docker-reset:
-	@echo "WARNING: This removes ALL EventFlow volumes including database data!"
+	@echo WARNING: This removes ALL EventFlow volumes including database data!
 	docker compose down -v
 
 docker-logs:
@@ -108,12 +106,7 @@ docker-logs:
 docker-status:
 	docker compose ps
 
-# ─── Cleanup ─────────────────────────────────────────────────────────────────
+# ─── Cleanup (Pure Python: 100% cross-platform, no Unix find/rm needed) ───────
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
-	find . -name ".coverage" -delete 2>/dev/null || true
-	cd frontend && rm -rf dist/ 2>/dev/null || true
-	@echo "Cleaned build artifacts."
+	python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; [p.unlink(missing_ok=True) for p in pathlib.Path('.').rglob('*.py[co]')]; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('.pytest_cache')]; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('htmlcov')]; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('dist')]; [p.unlink(missing_ok=True) for p in pathlib.Path('.').rglob('.coverage')]"
+	@echo Cleaned build artifacts and cache.
