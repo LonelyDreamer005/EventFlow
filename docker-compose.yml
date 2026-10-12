@@ -80,6 +80,40 @@ services:
     networks:
       - eventflow-network
 
+  # ── 4. Observability Tier (Prometheus & Grafana) ────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: eventflow-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - eventflow-network
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: eventflow-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      - prometheus
+    networks:
+      - eventflow-network
+
 # ── Storage & Networking ──────────────────────────────────────────────────────
 volumes:
   postgres_data:
