@@ -76,12 +76,15 @@ class User(db.Model):
 
     def to_dict(self) -> dict:
         """Return public user representation (no password hash)."""
+        created = self.created_at
+        if created and created.tzinfo is None:
+            created = created.replace(tzinfo=UTC)
         return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
             "role": self.role,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": created.isoformat() if created else None,
         }
 
     def __repr__(self) -> str:

@@ -104,18 +104,25 @@ class Event(db.Model):
         return sum(tt.available for tt in self.ticket_types)
 
     def to_dict(self, include_tickets: bool = False) -> dict:
+        def _iso(dt):
+            if not dt:
+                return None
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.isoformat()
+
         data: dict = {
             "id": self.id,
             "title": self.title,
             "description": self.description,
             "venue": self.venue,
-            "start_at": self.start_at.isoformat() if self.start_at else None,
-            "end_at": self.end_at.isoformat() if self.end_at else None,
+            "start_at": _iso(self.start_at),
+            "end_at": _iso(self.end_at),
             "status": self.status,
             "is_bookable": self.is_bookable,
             "created_by": self.created_by,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": _iso(self.created_at),
+            "updated_at": _iso(self.updated_at),
         }
         if include_tickets:
             data["ticket_types"] = [tt.to_dict() for tt in self.ticket_types]

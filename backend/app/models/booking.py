@@ -111,14 +111,20 @@ class Booking(db.Model):
         return self.status == BookingStatus.CANCELLED
 
     def to_dict(self, include_items: bool = True, include_user: bool = False) -> dict:
+        created = self.created_at
+        if created and created.tzinfo is None:
+            created = created.replace(tzinfo=UTC)
+        updated = self.updated_at
+        if updated and updated.tzinfo is None:
+            updated = updated.replace(tzinfo=UTC)
         data: dict = {
             "id": self.id,
             "reference": self.reference,
             "user_id": self.user_id,
             "status": self.status,
             "total_amount": str(self.total_amount),
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": created.isoformat() if created else None,
+            "updated_at": updated.isoformat() if updated else None,
         }
         if self.user:
             data["user_name"] = self.user.name
