@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Ticket, Compass, Filter } from 'lucide-react'
+import { Calendar, Compass } from 'lucide-react'
 import { bookingService } from '../services/bookings'
 import BookingCard from '../components/BookingCard'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -38,46 +38,26 @@ export default function BookingHistory() {
     await loadBookings(page)
   }
 
-  // Filter in-memory for active status filter
   const filteredBookings = bookings.filter((b) => {
     if (statusFilter === 'all') return true
     return b.status === statusFilter
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Header and Filter Controls */}
+    <div className="page-wrap page-stack">
       <div className="page-header">
         <div className="page-title">
-          <h1>My Booking History</h1>
-          <p className="page-subtitle">View, manage, and download confirmation receipts for your reservations</p>
+          <h1>Your tickets</h1>
+          <p className="page-subtitle">Open a stub, reprint a receipt, or release a seat.</p>
         </div>
 
-        {/* Filter Pills */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            background: 'var(--bg-glass-strong)',
-            padding: '0.35rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
+        <div className="pill-tabs">
           {['all', 'confirmed', 'cancelled'].map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setStatusFilter(tab)}
-              className="btn btn-sm"
-              style={{
-                background: statusFilter === tab ? 'var(--brand-gradient)' : 'transparent',
-                color: statusFilter === tab ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                textTransform: 'capitalize',
-                padding: '0.4rem 0.85rem',
-              }}
+              className={`tab ${statusFilter === tab ? 'is-active' : ''}`}
             >
               {tab}
             </button>
@@ -90,33 +70,25 @@ export default function BookingHistory() {
       {loading ? (
         <LoadingSpinner message="Loading reservations..." />
       ) : filteredBookings.length === 0 ? (
-        <div
-          className="glass-card"
-          style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-secondary)' }}
-        >
-          <Calendar size={44} color="var(--cyan)" style={{ marginBottom: '1rem' }} />
-          <h3>No Bookings Found</h3>
-          <p style={{ marginTop: '0.5rem', marginBottom: '1.5rem' }}>
+        <div className="glass-card empty-state">
+          <Calendar size={44} color="var(--gold)" />
+          <h3>No bookings found</h3>
+          <p>
             {statusFilter !== 'all'
-              ? `No reservations with status "${statusFilter}".`
-              : "You haven't made any ticket reservations yet."}
+              ? `Nothing marked “${statusFilter}”.`
+              : "You haven't reserved tickets yet."}
           </p>
           <Link to="/events" className="btn btn-primary btn-sm">
-            <Compass size={16} /> Explore Events
+            <Compass size={16} /> Explore events
           </Link>
         </div>
       ) : (
         <>
           <div className="grid-cards">
             {filteredBookings.map((booking) => (
-              <BookingCard
-                key={booking.id}
-                booking={booking}
-                onCancelSuccess={handleCancelBooking}
-              />
+              <BookingCard key={booking.id} booking={booking} onCancelSuccess={handleCancelBooking} />
             ))}
           </div>
-
           <Pagination
             page={pagination.page}
             totalPages={pagination.total_pages}

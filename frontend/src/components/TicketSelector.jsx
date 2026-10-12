@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Minus, ShoppingBag, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, Minus, ShoppingBag } from 'lucide-react'
 import { formatCurrency } from '../utils/formatters'
 
 export default function TicketSelector({
@@ -8,7 +8,6 @@ export default function TicketSelector({
   isSubmitting = false,
   isAuthenticated = false,
 }) {
-  // quantities state: { [ticket_type_id]: number }
   const [quantities, setQuantities] = useState({})
 
   const handleQuantityChange = (ticketTypeId, maxAvailable, maxPerBooking, delta) => {
@@ -18,9 +17,8 @@ export default function TicketSelector({
     setQuantities({ ...quantities, [ticketTypeId]: next })
   }
 
-  // Calculate order items and total amount
   const selectedItems = Object.entries(quantities)
-    .filter(([_, qty]) => qty > 0)
+    .filter(([, qty]) => qty > 0)
     .map(([idStr, qty]) => {
       const type = ticketTypes.find((t) => t.id === parseInt(idStr, 10))
       return {
@@ -37,98 +35,76 @@ export default function TicketSelector({
 
   const handleCheckout = () => {
     if (totalTickets === 0) return
-    onBook(selectedItems.map((item) => ({
-      ticket_type_id: item.ticket_type_id,
-      quantity: item.quantity,
-    })))
+    onBook(
+      selectedItems.map((item) => ({
+        ticket_type_id: item.ticket_type_id,
+        quantity: item.quantity,
+      })),
+    )
   }
 
   return (
-    <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <ShoppingBag size={20} color="var(--cyan)" /> Select Tickets
+    <div className="glass-card page-stack" style={{ gap: '1.25rem' }}>
+      <div className="row-between">
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem' }}>
+          <ShoppingBag size={18} color="var(--gold)" /> Select tickets
         </h3>
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Inventory checked in real-time
-        </span>
       </div>
 
       {ticketTypes.length === 0 ? (
-        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          No ticket tiers are currently available for this event.
-        </div>
+        <p style={{ textAlign: 'center', padding: '1.5rem 0' }}>No ticket tiers are available yet.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="page-stack" style={{ gap: '0.75rem' }}>
           {ticketTypes.map((type) => {
             const isSoldOut = type.available <= 0
             const qty = quantities[type.id] || 0
             const maxAllowed = Math.min(type.available, type.max_per_booking || 10)
 
             return (
-              <div
-                key={type.id}
-                style={{
-                  background: isSoldOut ? 'rgba(255, 255, 255, 0.02)' : 'var(--bg-glass-strong)',
-                  border: isSoldOut ? '1px solid var(--border-subtle)' : '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '1.2rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  opacity: isSoldOut ? 0.6 : 1,
-                  transition: 'border-color var(--transition-fast)',
-                }}
-              >
+              <div key={type.id} className={`tier-row ${isSoldOut ? 'is-sold' : ''}`}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{type.name}</h4>
+                  <div className="row-between" style={{ marginBottom: '0.25rem' }}>
+                    <h4>{type.name}</h4>
                     {isSoldOut ? (
-                      <span className="badge badge-danger">Sold Out</span>
+                      <span className="badge badge-danger">Sold out</span>
                     ) : type.available <= 5 ? (
-                      <span className="badge badge-warning">Only {type.available} left!</span>
+                      <span className="badge badge-warning">Only {type.available} left</span>
                     ) : (
                       <span className="badge badge-success">{type.available} available</span>
                     )}
                   </div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--cyan)', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--gold)' }}>
                     {formatCurrency(type.price)}
-                    <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
-                      / ticket (max {type.max_per_booking || 10})
+                    <span style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                      / ticket · max {type.max_per_booking || 10}
                     </span>
                   </div>
                 </div>
 
-                {/* Quantity Stepper */}
                 {!isSoldOut ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="qty-stepper">
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleQuantityChange(type.id, type.available, type.max_per_booking, -1)}
                       disabled={qty <= 0 || isSubmitting}
-                      style={{ width: '34px', height: '34px', padding: 0 }}
+                      aria-label={`Decrease ${type.name}`}
                     >
                       <Minus size={15} />
                     </button>
-                    <span style={{ fontWeight: 700, fontSize: '1.1rem', minWidth: '24px', textAlign: 'center' }}>
-                      {qty}
-                    </span>
+                    <span className="qty-value">{qty}</span>
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleQuantityChange(type.id, type.available, type.max_per_booking, 1)}
                       disabled={qty >= maxAllowed || isSubmitting}
-                      style={{ width: '34px', height: '34px', padding: 0 }}
+                      aria-label={`Increase ${type.name}`}
                     >
                       <Plus size={15} />
                     </button>
                   </div>
                 ) : (
-                  <span style={{ fontSize: '0.9rem', color: 'var(--danger)', fontWeight: 600 }}>
-                    Unavailable
-                  </span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--danger)', fontWeight: 700 }}>Unavailable</span>
                 )}
               </div>
             )
@@ -136,57 +112,36 @@ export default function TicketSelector({
         </div>
       )}
 
-      {/* Booking Summary Box */}
       {totalTickets > 0 && (
-        <div
-          style={{
-            background: 'var(--brand-gradient-subtle)',
-            border: '1px solid var(--border-highlight)',
-            borderRadius: 'var(--radius-md)',
-            padding: '1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.85rem',
-            marginTop: '0.5rem',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Tickets selected:</span>
-            <span style={{ fontWeight: 600 }}>{totalTickets}</span>
+        <div className="order-summary">
+          <div className="row-between">
+            <span style={{ color: 'var(--text-secondary)' }}>Tickets selected</span>
+            <strong>{totalTickets}</strong>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderTop: '1px solid var(--border-subtle)',
-              paddingTop: '0.75rem',
-            }}
-          >
-            <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Total (Simulated Payment):</span>
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--cyan)' }}>
+          {selectedItems.map((item) => (
+            <div key={item.ticket_type_id} className="line-list-row">
+              <span>
+                {item.name} × {item.quantity}
+              </span>
+              <span>{formatCurrency(item.subtotal)}</span>
+            </div>
+          ))}
+          <div className="row-between" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.7rem' }}>
+            <span style={{ fontWeight: 700 }}>Total</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--gold)' }}>
               {formatCurrency(totalAmount)}
             </span>
           </div>
 
-          <button
-            type="button"
-            className="btn btn-primary btn-lg"
-            onClick={handleCheckout}
-            disabled={isSubmitting}
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          >
-            {isSubmitting ? (
-              'Securing Reservation...'
-            ) : isAuthenticated ? (
-              `Confirm & Reserve (${formatCurrency(totalAmount)})`
-            ) : (
-              'Sign In to Complete Booking'
-            )}
+          <button type="button" className="btn btn-primary btn-lg btn-block" onClick={handleCheckout} disabled={isSubmitting}>
+            {isSubmitting
+              ? 'Securing your seats...'
+              : isAuthenticated
+                ? `Confirm · ${formatCurrency(totalAmount)}`
+                : 'Sign in to complete'}
           </button>
-
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-             Atomic inventory lock acquired during transaction.
+          <p style={{ fontSize: '0.78rem', textAlign: 'center', margin: 0 }}>
+            Simulated payment · seats locked on confirm
           </p>
         </div>
       )}

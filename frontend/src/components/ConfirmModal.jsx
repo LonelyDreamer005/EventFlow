@@ -18,35 +18,17 @@ export default function ConfirmModal({
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div className="modal-title-row">
             {isDanger && <AlertTriangle size={20} color="var(--danger)" />}
-            <h3 style={{ fontSize: '1.25rem' }}>{title}</h3>
+            <h3 style={{ fontSize: '1.2rem' }}>{title}</h3>
           </div>
-          <button
-            onClick={onCancel}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
+          <button type="button" onClick={onCancel} className="icon-btn" aria-label="Close">
             <X size={20} />
           </button>
         </div>
-
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.975rem', lineHeight: 1.6 }}>
-          {message}
-        </p>
-
+        <p>{message}</p>
         <div className="modal-footer">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
+          <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isLoading}>
             {cancelText}
           </button>
           <button

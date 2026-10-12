@@ -4,45 +4,22 @@ import { AlertCircle, Home, Compass } from 'lucide-react'
 
 export default function NotFound() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '5rem 1rem',
-        gap: '1.25rem',
-      }}
-    >
-      <div
-        style={{
-          width: '64px',
-          height: '64px',
-          borderRadius: 'var(--radius-full)',
-          background: 'rgba(244, 63, 94, 0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--danger)',
-        }}
-      >
-        <AlertCircle size={32} />
-      </div>
-
-      <h1 style={{ fontSize: '3rem', fontWeight: 800 }}>404</h1>
-      <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>Page Not Found</h2>
-      <p style={{ maxWidth: '440px', color: 'var(--text-secondary)' }}>
-        The page you are looking for does not exist or has been moved.
-      </p>
-
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <Link to="/" className="btn btn-secondary" style={{ gap: '0.4rem' }}>
-          <Home size={16} /> Home
-        </Link>
-        <Link to="/events" className="btn btn-primary" style={{ gap: '0.4rem' }}>
-          <Compass size={16} /> Browse Events
-        </Link>
+    <div className="page-wrap">
+      <div className="fallback-page">
+        <div className="fallback-icon" style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>
+          <AlertCircle size={32} />
+        </div>
+        <h1>404</h1>
+        <h2>This aisle is empty</h2>
+        <p style={{ maxWidth: 420 }}>The page you want is not on the marquee — it may have moved.</p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Link to="/" className="btn btn-secondary">
+            <Home size={16} /> Home
+          </Link>
+          <Link to="/events" className="btn btn-primary">
+            <Compass size={16} /> Browse events
+          </Link>
+        </div>
       </div>
     </div>
   )

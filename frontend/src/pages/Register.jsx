@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { UserPlus, User, Mail, Lock } from 'lucide-react'
+import { Ticket } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isValidEmail, isValidPassword } from '../utils/validators'
 import ErrorMessage from '../components/ErrorMessage'
@@ -21,26 +21,20 @@ export default function Register() {
 
   const validate = () => {
     const errors = {}
-    if (!formData.name.trim()) {
-      errors.name = 'Full name is required.'
-    }
-
+    if (!formData.name.trim()) errors.name = 'Full name is required.'
     if (!formData.email) {
       errors.email = 'Email address is required.'
     } else if (!isValidEmail(formData.email)) {
       errors.email = 'Please provide a valid email address.'
     }
-
     if (!formData.password) {
       errors.password = 'Password is required.'
     } else if (!isValidPassword(formData.password)) {
       errors.password = 'Password must be at least 8 characters long.'
     }
-
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match.'
     }
-
     return errors
   }
 
@@ -55,7 +49,6 @@ export default function Register() {
 
     try {
       await register(formData.name.trim(), formData.email.trim(), formData.password)
-      // Automatically log user in
       await login(formData.email.trim(), formData.password)
       navigate('/dashboard')
     } catch (err) {
@@ -70,33 +63,14 @@ export default function Register() {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '3rem 1rem',
-      }}
-    >
-      <div className="glass-card" style={{ maxWidth: '460px', width: '100%', padding: '2.5rem 2rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--brand-gradient)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '1rem',
-              boxShadow: 'var(--shadow-glow)',
-            }}
-          >
-            <UserPlus size={24} color="#ffffff" />
+    <div className="auth-screen">
+      <div className="auth-panel">
+        <div className="auth-header">
+          <div className="brand-mark" style={{ margin: '0 auto 1rem' }}>
+            <Ticket size={20} color="#ffffff" />
           </div>
-          <h1 style={{ fontSize: '1.75rem', marginBottom: '0.35rem' }}>Create Account</h1>
-          <p style={{ fontSize: '0.925rem' }}>Join EventFlow for instant ticket reservations</p>
+          <h1>Join the house</h1>
+          <p>Create an account to reserve tickets in one tap.</p>
         </div>
 
         {serverError && <ErrorMessage message={serverError} />}
@@ -104,7 +78,7 @@ export default function Register() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="name">
-              Full Name
+              Full name
             </label>
             <input
               id="name"
@@ -120,7 +94,7 @@ export default function Register() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="email">
-              Email Address
+              Email
             </label>
             <input
               id="email"
@@ -136,7 +110,7 @@ export default function Register() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="password">
-              Password (min 8 characters)
+              Password · 8+ characters
             </label>
             <input
               id="password"
@@ -152,7 +126,7 @@ export default function Register() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="confirmPassword">
-              Confirm Password
+              Confirm password
             </label>
             <input
               id="confirmPassword"
@@ -166,21 +140,13 @@ export default function Register() {
             {formErrors.confirmPassword && <span className="form-error">{formErrors.confirmPassword}</span>}
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '1rem' }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Registering...' : 'Complete Registration'}
+          <button type="submit" className="btn btn-primary btn-block" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ fontWeight: 600, color: 'var(--cyan)' }}>
-            Sign In
-          </Link>
+        <div className="auth-footer">
+          Already have a stub? <Link to="/login" style={{ fontWeight: 700 }}>Sign in</Link>
         </div>
       </div>
     </div>

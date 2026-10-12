@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Calendar, MapPin, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { Calendar, MapPin, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { eventService } from '../services/events'
 import { bookingService } from '../services/bookings'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,7 @@ import StatusBadge from '../components/StatusBadge'
 import TicketSelector from '../components/TicketSelector'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import EventCover from '../components/EventCover'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -50,7 +51,6 @@ export default function EventDetail() {
     try {
       const result = await bookingService.createBooking(items)
       const bookingId = result.booking?.id
-      // Navigate to booking receipt with newly confirmed reservation
       navigate(`/bookings/${bookingId}`, {
         state: { newBookingSuccess: true, reference: result.booking?.reference },
       })
@@ -61,7 +61,6 @@ export default function EventDetail() {
         err?.message ||
         'Failed to complete booking reservation.'
       setBookingError(msg)
-      // Reload event details to get updated inventory counts
       loadEvent()
     } finally {
       setIsSubmitting(false)
@@ -69,14 +68,18 @@ export default function EventDetail() {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading event details..." />
+    return (
+      <div className="page-wrap">
+        <LoadingSpinner message="Loading event details..." />
+      </div>
+    )
   }
 
   if (error || !event) {
     return (
-      <div>
-        <Link to="/events" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem', gap: '0.4rem' }}>
-          <ArrowLeft size={16} /> Back to Events
+      <div className="page-wrap">
+        <Link to="/events" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem' }}>
+          <ArrowLeft size={16} /> Back to events
         </Link>
         <ErrorMessage error={error || 'Event not found'} onRetry={loadEvent} />
       </div>
@@ -84,97 +87,60 @@ export default function EventDetail() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      {/* Top Navigation */}
-      <div>
-        <Link to="/events" className="btn btn-secondary btn-sm" style={{ gap: '0.4rem' }}>
-          <ArrowLeft size={16} /> Back to Events
-        </Link>
-      </div>
+    <div className="page-wrap page-stack">
+      <Link to="/events" className="btn btn-secondary btn-sm" style={{ width: 'fit-content' }}>
+        <ArrowLeft size={16} /> Back to events
+      </Link>
 
-      {bookingError && (
-        <ErrorMessage message={bookingError} />
-      )}
+      {bookingError && <ErrorMessage message={bookingError} />}
 
-      {/* Main Two-Column Layout */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '2.5rem',
-          alignItems: 'start',
-        }}
-      >
-        {/* Left Column: Event Details */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      <div className="split-layout">
+        <div className="page-stack">
+          <EventCover event={event} size="hero" />
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <div className="row-between" style={{ marginBottom: '0.75rem' }}>
               <StatusBadge status={event.status} />
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Event #{event.id}
-              </span>
             </div>
-            <h1 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', marginBottom: '1rem' }}>
-              {event.title}
-            </h1>
+            <h1>{event.title}</h1>
           </div>
 
-          {/* Key Info Cards */}
-          <div
-            className="glass-card"
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Calendar size={20} color="var(--cyan)" />
+          <div className="glass-card detail-facts">
+            <div className="meta-row">
+              <Calendar size={18} color="var(--gold)" />
               <div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>Date & Time</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                <span className="form-label">Date & time</span>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                   {formatDateTime(event.start_at)}
                   {event.end_at && ` – ${formatDateTime(event.end_at)}`}
-                </span>
+                </div>
               </div>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-              <MapPin size={20} color="var(--primary)" />
+            <div className="meta-row" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+              <MapPin size={18} color="var(--magenta)" />
               <div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>Venue Location</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{event.venue}</span>
+                <span className="form-label">Venue</span>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{event.venue}</div>
               </div>
             </div>
           </div>
 
-          {/* Description */}
-          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <h3 style={{ fontSize: '1.2rem' }}>About This Event</h3>
-            <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: 'var(--text-secondary)' }}>
+          <div className="glass-card">
+            <h3 style={{ marginBottom: '0.7rem' }}>About this night</h3>
+            <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
               {event.description || 'No detailed description provided for this event.'}
             </p>
           </div>
 
-          {/* Guarantees Box */}
-          <div
-            style={{
-              padding: '1.25rem',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-glass-strong)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              color: 'var(--text-secondary)',
-              fontSize: '0.875rem',
-            }}
-          >
-            <ShieldCheck size={24} color="var(--success)" style={{ flexShrink: 0 }} />
+          <div className="guarantee-note">
+            <ShieldCheck size={22} color="var(--success)" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Simulated Payment & Instant Confirmation:</strong> All reservations reserve tickets atomically with zero risk of double-booking.
+              <strong style={{ color: 'var(--text-primary)' }}>Instant confirmation.</strong> Seats are reserved
+              atomically — you will not share the last ticket with another checkout.
             </span>
           </div>
         </div>
 
-        {/* Right Column: Ticket Selector */}
-        <div>
+        <div className="checkout-sticky">
           <TicketSelector
             ticketTypes={event.ticket_types || []}
             onBook={handleBookTickets}

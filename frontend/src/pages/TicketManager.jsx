@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Ticket, Save, CheckCircle2, AlertCircle, Edit2, Eye } from 'lucide-react'
+import { ArrowLeft, Plus, Ticket, CheckCircle2, Eye } from 'lucide-react'
 import { eventService } from '../services/events'
 import { formatCurrency } from '../utils/formatters'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -13,8 +13,6 @@ export default function TicketManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionSuccess, setActionSuccess] = useState(null)
-
-  // New ticket type form
   const [newTier, setNewTier] = useState({
     name: '',
     price: '',
@@ -23,8 +21,6 @@ export default function TicketManager() {
   })
   const [isAdding, setIsAdding] = useState(false)
   const [addError, setAddError] = useState(null)
-
-  // Editing ticket type state
   const [editingTierId, setEditingTierId] = useState(null)
   const [editFormData, setEditFormData] = useState({ price: '', capacity: '' })
   const [isUpdating, setIsUpdating] = useState(false)
@@ -70,7 +66,7 @@ export default function TicketManager() {
         max_per_booking: parseInt(newTier.max_per_booking || 10, 10),
       })
       setNewTier({ name: '', price: '', capacity: '', max_per_booking: 10 })
-      setActionSuccess('New ticket tier created successfully!')
+      setActionSuccess('New ticket tier created.')
       await loadData()
     } catch (err) {
       setAddError(err?.response?.data?.message || 'Failed to create ticket tier.')
@@ -95,24 +91,28 @@ export default function TicketManager() {
         capacity: parseInt(editFormData.capacity, 10),
       })
       setEditingTierId(null)
-      setActionSuccess('Ticket tier updated successfully!')
+      setActionSuccess('Ticket tier updated.')
       await loadData()
     } catch (err) {
-      setUpdateError(err?.response?.data?.message || 'Failed to update ticket tier capacity or price.')
+      setUpdateError(err?.response?.data?.message || 'Failed to update ticket tier.')
     } finally {
       setIsUpdating(false)
     }
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading ticket tiers..." />
+    return (
+      <div className="page-wrap">
+        <LoadingSpinner message="Loading ticket tiers..." />
+      </div>
+    )
   }
 
   if (error || !event) {
     return (
-      <div>
-        <Link to="/admin/events" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem', gap: '0.4rem' }}>
-          <ArrowLeft size={16} /> Back to Events
+      <div className="page-wrap">
+        <Link to="/admin/events" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem' }}>
+          <ArrowLeft size={16} /> Back to events
         </Link>
         <ErrorMessage error={error || 'Event not found.'} onRetry={loadData} />
       </div>
@@ -120,209 +120,149 @@ export default function TicketManager() {
   }
 
   return (
-    <div style={{ maxWidth: '840px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link to="/admin/events" className="btn btn-secondary btn-sm" style={{ gap: '0.4rem' }}>
-          <ArrowLeft size={16} /> Back to Manage Events
+    <div className="page-wrap page-stack" style={{ maxWidth: 880 }}>
+      <div className="row-between">
+        <Link to="/admin/events" className="btn btn-secondary btn-sm">
+          <ArrowLeft size={16} /> Manage events
         </Link>
-
-        <Link to={`/events/${event.id}`} className="btn btn-outline btn-sm" style={{ gap: '0.4rem' }}>
-          <Eye size={15} /> Preview Public Page
+        <Link to={`/events/${event.id}`} className="btn btn-outline btn-sm">
+          <Eye size={15} /> Preview public page
         </Link>
       </div>
 
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <div className="page-title">
-          <h1>Ticket Inventory & Tiers</h1>
-          <p className="page-subtitle">Configure pricing tiers, capacity quotas, and limits for <strong>{event.title}</strong></p>
-        </div>
+      <div className="page-title">
+        <h1>Ticket tiers</h1>
+        <p className="page-subtitle">
+          Pricing and capacity for <strong style={{ color: 'var(--text-primary)' }}>{event.title}</strong>
+        </p>
       </div>
 
       {actionSuccess && (
-        <div
-          style={{
-            background: 'var(--success-bg)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            padding: '1rem 1.25rem',
-            color: 'var(--success)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
+        <div className="alert alert-success">
           <CheckCircle2 size={18} /> {actionSuccess}
         </div>
       )}
 
-      {/* Existing Ticket Tiers List */}
-      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: '1.3rem' }}>Configured Tiers ({ticketTypes.length})</h2>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Inventory safety enforced via database constraints
-          </span>
+      <div className="glass-card page-stack">
+        <div className="row-between">
+          <h2 style={{ fontSize: '1.2rem' }}>Configured ({ticketTypes.length})</h2>
         </div>
 
         {updateError && <ErrorMessage message={updateError} />}
 
         {ticketTypes.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
-            <Ticket size={36} color="var(--cyan)" style={{ marginBottom: '0.75rem' }} />
-            <p>No ticket tiers configured yet. Add your first tier below to make this event bookable.</p>
+          <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+            <Ticket size={36} color="var(--gold)" />
+            <p>No tiers yet. Add one below to make this event bookable.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {ticketTypes.map((tier) => {
-              const soldCount = tier.capacity - tier.available
-              const isEditingThis = editingTierId === tier.id
+          ticketTypes.map((tier) => {
+            const soldCount = tier.capacity - tier.available
+            const isEditingThis = editingTierId === tier.id
 
-              return (
-                <div
-                  key={tier.id}
-                  style={{
-                    background: 'var(--bg-glass-strong)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '1.25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.85rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>{tier.name}</h3>
-                      <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                        Max per order: {tier.max_per_booking || 10} tickets
-                      </div>
-                    </div>
-
-                    {!isEditingThis && (
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => startEditing(tier)}
-                        style={{ gap: '0.35rem' }}
-                      >
-                        <Edit2 size={14} /> Edit Quota
-                      </button>
-                    )}
+            return (
+              <div key={tier.id} className="tier-admin">
+                <div className="row-between">
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem' }}>{tier.name}</h3>
+                    <p style={{ fontSize: '0.8rem', margin: 0 }}>Max per order: {tier.max_per_booking || 10}</p>
                   </div>
-
-                  {isEditingThis ? (
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr auto',
-                        gap: '1rem',
-                        alignItems: 'end',
-                        background: 'rgba(0, 0, 0, 0.25)',
-                        padding: '1rem',
-                        borderRadius: 'var(--radius-sm)',
-                      }}
-                    >
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Price ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          value={editFormData.price}
-                          onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Total Capacity (min {soldCount})</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editFormData.capacity}
-                          onChange={(e) => setEditFormData({ ...editFormData, capacity: e.target.value })}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          disabled={isUpdating}
-                          onClick={() => handleUpdateTier(tier.id)}
-                        >
-                          {isUpdating ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setEditingTierId(null)}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '0.75rem',
-                        paddingTop: '0.5rem',
-                        borderTop: '1px solid var(--border-subtle)',
-                        fontSize: '0.9rem',
-                      }}
-                    >
-                      <div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Price</span>
-                        <strong style={{ color: 'var(--cyan)' }}>{formatCurrency(tier.price)}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Total Capacity</span>
-                        <strong>{tier.capacity}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Tickets Sold</span>
-                        <strong style={{ color: soldCount > 0 ? 'var(--primary)' : 'var(--text-muted)' }}>
-                          {soldCount}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Available Now</span>
-                        <strong style={{ color: tier.available > 0 ? 'var(--success)' : 'var(--danger)' }}>
-                          {tier.available}
-                        </strong>
-                      </div>
-                    </div>
+                  {!isEditingThis && (
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEditing(tier)}>
+                      Edit quota
+                    </button>
                   )}
                 </div>
-              )
-            })}
-          </div>
+
+                {isEditingThis ? (
+                  <div className="edit-tier-grid">
+                    <div className="form-group tight">
+                      <label className="form-label">Price ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        value={editFormData.price}
+                        onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group tight">
+                      <label className="form-label">Capacity (min {soldCount})</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={editFormData.capacity}
+                        onChange={(e) => setEditFormData({ ...editFormData, capacity: e.target.value })}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={isUpdating}
+                        onClick={() => handleUpdateTier(tier.id)}
+                      >
+                        {isUpdating ? 'Saving...' : 'Save'}
+                      </button>
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditingTierId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="tier-metrics">
+                    <div>
+                      <span className="stat-label">Price</span>
+                      <strong style={{ color: 'var(--gold)', display: 'block' }}>{formatCurrency(tier.price)}</strong>
+                    </div>
+                    <div>
+                      <span className="stat-label">Capacity</span>
+                      <strong style={{ display: 'block' }}>{tier.capacity}</strong>
+                    </div>
+                    <div>
+                      <span className="stat-label">Sold</span>
+                      <strong style={{ display: 'block' }}>{soldCount}</strong>
+                    </div>
+                    <div>
+                      <span className="stat-label">Available</span>
+                      <strong style={{ display: 'block', color: tier.available > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                        {tier.available}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 
-      {/* Add New Tier Form Card */}
-      <div className="glass-card" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Plus size={18} color="var(--cyan)" /> Add New Ticket Tier
+      <div className="glass-card">
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <Plus size={18} color="var(--gold)" /> Add tier
         </h2>
 
         {addError && <ErrorMessage message={addError} />}
 
-        <form onSubmit={handleAddTier} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', alignItems: 'end' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="tierName">Tier Name</label>
+        <form onSubmit={handleAddTier} className="add-tier-grid">
+          <div className="form-group tight">
+            <label className="form-label" htmlFor="tierName">
+              Name
+            </label>
             <input
               id="tierName"
               type="text"
               className="form-input"
-              placeholder="e.g. VIP Early Bird"
+              placeholder="VIP"
               value={newTier.name}
               onChange={(e) => setNewTier({ ...newTier, name: e.target.value })}
               disabled={isAdding}
             />
           </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="tierPrice">Price (USD)</label>
+          <div className="form-group tight">
+            <label className="form-label" htmlFor="tierPrice">
+              Price
+            </label>
             <input
               id="tierPrice"
               type="number"
@@ -335,9 +275,10 @@ export default function TicketManager() {
               disabled={isAdding}
             />
           </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="tierCapacity">Capacity</label>
+          <div className="form-group tight">
+            <label className="form-label" htmlFor="tierCapacity">
+              Capacity
+            </label>
             <input
               id="tierCapacity"
               type="number"
@@ -349,29 +290,23 @@ export default function TicketManager() {
               disabled={isAdding}
             />
           </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="tierMax">Max Per Order</label>
+          <div className="form-group tight">
+            <label className="form-label" htmlFor="tierMax">
+              Max / order
+            </label>
             <input
               id="tierMax"
               type="number"
               min="1"
               max="50"
               className="form-input"
-              placeholder="10"
               value={newTier.max_per_booking}
               onChange={(e) => setNewTier({ ...newTier, max_per_booking: e.target.value })}
               disabled={isAdding}
             />
           </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isAdding}
-            style={{ height: '42px', gap: '0.4rem' }}
-          >
-            <Plus size={16} /> {isAdding ? 'Adding...' : 'Add Tier'}
+          <button type="submit" className="btn btn-primary" disabled={isAdding}>
+            <Plus size={16} /> {isAdding ? 'Adding...' : 'Add'}
           </button>
         </form>
       </div>

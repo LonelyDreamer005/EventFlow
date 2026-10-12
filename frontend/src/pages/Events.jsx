@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Search, Compass, AlertCircle } from 'lucide-react'
+import { Search, Compass } from 'lucide-react'
 import { eventService } from '../services/events'
 import EventCard from '../components/EventCard'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -44,34 +44,24 @@ export default function Events() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Header & Search */}
+    <div className="page-wrap page-stack">
       <div className="page-header">
         <div className="page-title">
-          <h1>Browse Live Events</h1>
-          <p className="page-subtitle">Reserve guaranteed seats for concerts, conferences, and meetups</p>
+          <h1>What&apos;s on</h1>
+          <p className="page-subtitle">Find a night, claim a seat, walk in with a stub.</p>
         </div>
+      </div>
 
-        {/* Search input form */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '380px' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search
-              size={18}
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-              }}
-            />
+      <div className="filter-bar">
+        <form onSubmit={handleSearchSubmit}>
+          <div className="search-field">
+            <Search size={18} />
             <input
-              type="text"
+              type="search"
               className="form-input"
-              placeholder="Search by event title or venue..."
+              placeholder="Search title or venue"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: '2.5rem' }}
             />
           </div>
           <button type="submit" className="btn btn-secondary">
@@ -83,16 +73,15 @@ export default function Events() {
       {error && <ErrorMessage error={error} onRetry={() => fetchEvents(page, searchTerm)} />}
 
       {loading ? (
-        <LoadingSpinner message="Fetching events from inventory..." />
+        <LoadingSpinner message="Pulling the marquee..." />
       ) : events.length === 0 ? (
-        <div
-          className="glass-card"
-          style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-secondary)' }}
-        >
-          <Compass size={44} color="var(--cyan)" style={{ marginBottom: '1rem' }} />
-          <h3>No Events Found</h3>
-          <p style={{ marginTop: '0.5rem' }}>
-            {searchTerm ? `No results matching "${searchTerm}". Try another query.` : 'There are currently no published events.'}
+        <div className="glass-card empty-state">
+          <Compass size={44} color="var(--gold)" />
+          <h3>No events found</h3>
+          <p>
+            {searchTerm
+              ? `Nothing matches “${searchTerm}”. Try another search.`
+              : 'There are no published events yet.'}
           </p>
         </div>
       ) : (
@@ -102,7 +91,6 @@ export default function Events() {
               <EventCard key={evt.id} event={evt} />
             ))}
           </div>
-
           <Pagination
             page={pagination.page}
             totalPages={pagination.total_pages}

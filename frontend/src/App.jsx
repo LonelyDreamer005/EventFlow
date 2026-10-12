@@ -33,7 +33,7 @@ export default function App() {
       <AuthProvider>
         <div className="app-container">
           <Navbar />
-          <main className="main-content">
+          <main className="main-content" id="main">
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />

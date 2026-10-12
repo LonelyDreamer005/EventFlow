@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Calendar,
-  Ticket,
-  DollarSign,
-  Users,
-  Shield,
-  TrendingUp,
-  PlusCircle,
-  Hash,
-  ArrowRight,
-} from 'lucide-react'
+import { PlusCircle, ArrowRight } from 'lucide-react'
 import { adminService } from '../services/admin'
 import { formatCurrency, formatDateTime } from '../utils/formatters'
 import StatusBadge from '../components/StatusBadge'
@@ -40,198 +30,98 @@ export default function AdminDashboard() {
   }, [])
 
   if (loading) {
-    return <LoadingSpinner message="Calculating dashboard statistics..." />
+    return (
+      <div className="page-wrap">
+        <LoadingSpinner message="Calculating house numbers..." />
+      </div>
+    )
   }
 
   if (error || !dashboardData) {
-    return <ErrorMessage error={error || 'Failed to load admin metrics.'} onRetry={loadDashboard} />
+    return (
+      <div className="page-wrap">
+        <ErrorMessage error={error || 'Failed to load admin metrics.'} onRetry={loadDashboard} />
+      </div>
+    )
   }
 
   const { stats, recent_bookings = [] } = dashboardData
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      {/* Header */}
+    <div className="page-wrap page-stack">
       <div className="page-header">
         <div className="page-title">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Shield size={24} color="var(--cyan)" />
-            <h1>Admin Operations Hub</h1>
-          </div>
-          <p className="page-subtitle">Real-time database metrics, inventory stats, and reservation oversight</p>
+          <h1>House board</h1>
+          <p className="page-subtitle">Revenue, inventory, and the latest reservations.</p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
           <Link to="/admin/events" className="btn btn-secondary btn-sm">
-            Manage All Events
+            Manage events
           </Link>
-          <Link to="/admin/events/new" className="btn btn-primary btn-sm" style={{ gap: '0.4rem' }}>
-            <PlusCircle size={15} /> Create Event
+          <Link to="/admin/events/new" className="btn btn-primary btn-sm">
+            <PlusCircle size={15} /> Create event
           </Link>
         </div>
       </div>
 
-      {/* Real-time KPI Cards Grid */}
       <div className="grid-stats">
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--success)',
-            }}
-          >
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block' }}>
-              Total Revenue
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--success)' }}>
-              {formatCurrency(stats.total_revenue || 0)}
-            </span>
-          </div>
+        <div className="stat-tile">
+          <span className="stat-label">Revenue</span>
+          <span className="stat-value">{formatCurrency(stats.total_revenue || 0)}</span>
         </div>
-
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(6, 182, 212, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--cyan)',
-            }}
-          >
-            <Ticket size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block' }}>
-              Tickets Sold
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800 }}>
-              {stats.total_tickets_sold || 0}
-            </span>
-          </div>
+        <div className="stat-tile">
+          <span className="stat-label">Tickets sold</span>
+          <span className="stat-value">{stats.total_tickets_sold || 0}</span>
         </div>
-
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(99, 102, 241, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--primary)',
-            }}
-          >
-            <Calendar size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block' }}>
-              Total Events
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800 }}>
-              {stats.total_events || 0}
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.4rem' }}>
-                ({stats.published_events || 0} published)
-              </span>
-            </span>
-          </div>
+        <div className="stat-tile">
+          <span className="stat-label">Events</span>
+          <span className="stat-value">{stats.total_events || 0}</span>
+          <span className="stat-hint">{stats.published_events || 0} published</span>
         </div>
-
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(245, 158, 11, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--warning)',
-            }}
-          >
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block' }}>
-              Confirmed Bookings
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800 }}>
-              {stats.confirmed_bookings || 0}
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.4rem' }}>
-                / {stats.total_bookings || 0}
-              </span>
-            </span>
-          </div>
+        <div className="stat-tile">
+          <span className="stat-label">Confirmed</span>
+          <span className="stat-value">{stats.confirmed_bookings || 0}</span>
+          <span className="stat-hint">of {stats.total_bookings || 0} bookings</span>
         </div>
       </div>
 
-      {/* Recent Platform Reservations Table */}
-      <div className="glass-card" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.4rem' }}>Recent Platform Bookings</h2>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Latest 10 transactions
-          </span>
+      <div className="glass-card">
+        <div className="section-heading" style={{ marginBottom: '1.1rem' }}>
+          <h2 style={{ fontSize: '1.3rem' }}>Latest bookings</h2>
+          <span className="stat-hint">Most recent 10</span>
         </div>
 
         {recent_bookings.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>
-            No bookings recorded in the system yet.
-          </p>
+          <p style={{ textAlign: 'center', padding: '1.5rem 0' }}>No bookings recorded yet.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.925rem' }}>
+          <div className="data-table-wrap stack-on-mobile">
+            <table className="data-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>Reference</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Customer ID</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Date</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Amount</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Action</th>
+                <tr>
+                  <th>Reference</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th style={{ textAlign: 'right' }}> </th>
                 </tr>
               </thead>
               <tbody>
                 {recent_bookings.map((booking) => (
-                  <tr
-                    key={booking.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-subtle)',
-                      transition: 'background var(--transition-fast)',
-                    }}
-                  >
-                    <td style={{ padding: '0.85rem 1rem', fontFamily: 'monospace', fontWeight: 600 }}>
-                      #{booking.reference}
+                  <tr key={booking.id}>
+                    <td data-label="Reference" style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700 }}>
+                      {booking.reference}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
-                      User #{booking.user_id}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {formatDateTime(booking.created_at)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td data-label="Customer">User #{booking.user_id}</td>
+                    <td data-label="Date">{formatDateTime(booking.created_at)}</td>
+                    <td data-label="Status">
                       <StatusBadge status={booking.status} />
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--cyan)' }}>
+                    <td data-label="Amount" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
                       {formatCurrency(booking.total_amount)}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                      <Link to={`/bookings/${booking.id}`} className="btn btn-secondary btn-sm" style={{ padding: '0.3rem 0.6rem' }}>
+                    <td data-label="Action" style={{ textAlign: 'right' }}>
+                      <Link to={`/bookings/${booking.id}`} className="btn btn-secondary btn-sm">
                         View <ArrowRight size={12} />
                       </Link>
                     </td>

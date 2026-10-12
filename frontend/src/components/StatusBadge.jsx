@@ -1,12 +1,11 @@
 import React from 'react'
 
-export default function StatusBadge({ status, type = 'status' }) {
+export default function StatusBadge({ status }) {
   if (!status) return null
 
   const s = String(status).toLowerCase()
 
   let badgeClass = 'badge-neutral'
-  let label = status
 
   if (s === 'confirmed' || s === 'published') {
     badgeClass = 'badge-success'
@@ -20,16 +19,8 @@ export default function StatusBadge({ status, type = 'status' }) {
 
   return (
     <span className={`badge ${badgeClass}`}>
-      <span
-        style={{
-          width: '6px',
-          height: '6px',
-          borderRadius: '50%',
-          backgroundColor: 'currentColor',
-          display: 'inline-block',
-        }}
-      />
-      {label}
+      <span className="badge-dot" />
+      {status}
     </span>
   )
 }
