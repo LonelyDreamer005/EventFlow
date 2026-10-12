@@ -120,10 +120,23 @@ class Booking(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+        if self.user:
+            data["user_name"] = self.user.name
+            data["user_email"] = self.user.email
+            if include_user:
+                data["user"] = self.user.to_dict()
+
         if include_items:
-            data["items"] = [item.to_dict() for item in self.items]
-        if include_user and self.user:
-            data["user"] = self.user.to_dict()
+            items_list = [item.to_dict() for item in self.items]
+            data["items"] = items_list
+            if items_list and len(items_list) > 0:
+                first_item = items_list[0]
+                tt = first_item.get("ticket_type") or {}
+                data["ticket_name"] = tt.get("name")
+                event = tt.get("event") or {}
+                data["event_title"] = event.get("title")
+                data["event_venue"] = event.get("venue")
+                data["event_start_at"] = event.get("start_at")
         return data
 
     def __repr__(self) -> str:

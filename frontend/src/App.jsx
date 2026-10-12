@@ -20,6 +20,7 @@ import BookingDetail from './pages/BookingDetail'
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard'
 import AdminEvents from './pages/AdminEvents'
+import AdminUsers from './pages/AdminUsers'
 import EventForm from './pages/EventForm'
 import TicketManager from './pages/TicketManager'
 
@@ -82,6 +83,14 @@ export default function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminEvents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminUsers />
                   </ProtectedRoute>
                 }
               />

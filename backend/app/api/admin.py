@@ -116,7 +116,7 @@ def dashboard():
                 for row in bookings_by_event
             ],
             "recent_bookings": [
-                b.to_dict(include_items=False, include_user=True)
+                b.to_dict(include_items=True, include_user=True)
                 for b in recent_bookings
             ],
         }

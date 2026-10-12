@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Ticket, Menu, X, User, LogOut, Shield, Compass, Calendar, PlusCircle } from 'lucide-react'
+import { Ticket, Menu, X, User, LogOut, Shield, Compass, Calendar, PlusCircle, Users } from 'lucide-react'
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth()
@@ -53,6 +53,13 @@ export default function Navbar() {
             onClick={onNavigate}
           >
             Events
+          </Link>
+          <Link
+            to="/admin/users"
+            className={`nav-link ${isActive('/admin/users') ? 'is-active' : ''}`}
+            onClick={onNavigate}
+          >
+            <Users size={16} /> Users
           </Link>
           <Link to="/admin/events/new" className="btn btn-outline btn-sm" onClick={onNavigate}>
             <PlusCircle size={15} /> Create
