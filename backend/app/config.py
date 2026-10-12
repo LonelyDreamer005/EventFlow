@@ -71,12 +71,18 @@ class BaseConfig:
                 direct_url = "postgresql://" + direct_url[len("postgres://"):]
             return direct_url
 
-        host = os.environ.get("POSTGRES_HOST", "localhost")
-        port = os.environ.get("POSTGRES_PORT", "5432")
-        db_name = os.environ.get("POSTGRES_DB", "eventflow")
-        user = os.environ.get("POSTGRES_USER", "eventflow_user")
-        password = os.environ.get("POSTGRES_PASSWORD", "")
-        return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+        # Check if PostgreSQL is explicitly configured or running in production
+        host = os.environ.get("POSTGRES_HOST")
+        if host or os.environ.get("FLASK_ENV") == "production":
+            host = host or "localhost"
+            port = os.environ.get("POSTGRES_PORT", "5432")
+            db_name = os.environ.get("POSTGRES_DB", "eventflow")
+            user = os.environ.get("POSTGRES_USER", "eventflow_user")
+            password = os.environ.get("POSTGRES_PASSWORD", "")
+            return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+
+        # Zero-config local development default
+        return "sqlite:///eventflow.db"
 
 
 class DevelopmentConfig(BaseConfig):

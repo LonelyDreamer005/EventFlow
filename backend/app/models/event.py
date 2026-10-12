@@ -90,9 +90,12 @@ class Event(db.Model):
     def is_bookable(self) -> bool:
         """True if the event accepts new bookings right now."""
         now = datetime.now(timezone.utc)
+        start = self.start_at
+        if start and start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
         return (
             self.status == EventStatus.PUBLISHED.value
-            and self.start_at > now
+            and (start is not None and start > now)
         )
 
     def total_capacity(self) -> int:
