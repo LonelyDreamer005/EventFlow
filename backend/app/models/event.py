@@ -10,7 +10,7 @@ from sqlalchemy import CheckConstraint, Index
 from ..extensions import db
 
 
-class EventStatus(str, enum.Enum):
+class EventStatus(str, enum.Enum):  # noqa: UP042
     """
     Lifecycle status for an event.
 

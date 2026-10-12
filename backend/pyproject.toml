@@ -1,8 +1,6 @@
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "SIM117", "E402"]
 exclude = [
     "migrations/",
     "backend/migrations/",
@@ -14,13 +12,10 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "SIM117", "E402"]
+ignore = ["E501", "B008", "SIM117", "E402", "UP042"]
 
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/*" = ["E402"]
-
-[tool.ruff.isort]
-known-first-party = ["app"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
