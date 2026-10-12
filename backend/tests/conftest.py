@@ -19,16 +19,16 @@ from decimal import Decimal
 
 import pytest
 
-# Load test env before creating app
-os.environ.setdefault("FLASK_ENV", "testing")
-if not os.environ.get("TEST_DATABASE_URL") and not os.environ.get("POSTGRES_HOST"):
-    os.environ["TEST_DATABASE_URL"] = "sqlite:///eventflow_test.db"
-
 from app import create_app
 from app.extensions import db as _db
 from app.models.event import Event, EventStatus
 from app.models.ticket_type import TicketType
 from app.models.user import User
+
+# Load test env before creating app
+os.environ.setdefault("FLASK_ENV", "testing")
+if not os.environ.get("TEST_DATABASE_URL") and not os.environ.get("POSTGRES_HOST"):
+    os.environ["TEST_DATABASE_URL"] = "sqlite:///eventflow_test.db"
 
 
 @pytest.fixture(scope="session")
