@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: eventflow
+  labels:
+    app.kubernetes.io/name: db-migrate
+    app.kubernetes.io/part-of: eventflow-platform
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: db-migrate
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres-service -p 5432 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"; do
+                echo "Waiting for postgres-service to be available..."
+                sleep 2
+              done
+              echo "PostgreSQL is reachable and healthy."
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: eventflow-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: eventflow-secrets
+                  key: POSTGRES_USER
+      containers:
+        - name: schema-init
+          image: ghcr.io/lonelydreamer005/eventflow-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "Applying database schema and seed data..."
+              python -c "from app import create_app; from app.extensions import db; app = create_app(); ctx = app.app_context(); ctx.push(); db.create_all(); print('✅ Schema initialized successfully.')"
+              flask seed-events || echo "Events already initialized."
+              echo "✅ Database pre-flight migration completed."
+          envFrom:
+            - configMapRef:
+                name: eventflow-config
+            - secretRef:
+                name: eventflow-secrets
