@@ -28,6 +28,9 @@ param (
         "k8s-status",
         "hpa-status",
         "load-test",
+        "obs-up",
+        "obs-down",
+        "obs-status",
         "clean"
     )]
     [string]$Command = "help"
@@ -66,6 +69,9 @@ function Show-Help {
     Write-Host "  k8s-status         Inspect running pods, services, and PVCs in eventflow namespace"
     Write-Host "  hpa-status         Show status of Horizontal Pod Autoscaler"
     Write-Host "  load-test          Execute k6 flash-sale load test (native or docker)"
+    Write-Host "  obs-up             Start Prometheus (port 9090) and Grafana (port 3001)"
+    Write-Host "  obs-down           Stop Prometheus and Grafana containers"
+    Write-Host "  obs-status         Show status of monitoring stack containers"
     Write-Host "  clean              Remove Python caches and build artifacts"
     Write-Host ""
 }
@@ -227,6 +233,22 @@ switch ($Command) {
             Write-Host "--> k6 not found locally; executing via official Docker container..." -ForegroundColor Yellow
             docker run --rm -i --network="host" -v "${ProjectRoot}/scripts:/scripts" grafana/k6 run /scripts/k6-load-test.js
         }
+    }
+
+    "obs-up" {
+        Write-Host "--> Starting Prometheus (http://localhost:9090) & Grafana (http://localhost:3001)..." -ForegroundColor Cyan
+        docker compose up -d prometheus grafana
+        Write-Host "--> Observability stack is running!" -ForegroundColor Green
+    }
+
+    "obs-down" {
+        Write-Host "--> Stopping Prometheus and Grafana..." -ForegroundColor Yellow
+        docker compose stop prometheus grafana
+    }
+
+    "obs-status" {
+        Write-Host "--> Observability stack status..." -ForegroundColor Cyan
+        docker compose ps prometheus grafana
     }
 
     "clean" {
