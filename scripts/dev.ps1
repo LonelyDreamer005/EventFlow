@@ -184,7 +184,7 @@ switch ($Command) {
         Write-Host "--> Recent Bookings:" -ForegroundColor Cyan
         $dbPath = (Join-Path $ProjectRoot "backend\instance\eventflow.db")
         if (Test-Path $dbPath) {
-            python -c "import sqlite3; conn=sqlite3.connect(r'$dbPath'); cur=conn.cursor(); rows=cur.execute('SELECT b.id, u.name, b.status, b.total_amount, b.created_at FROM bookings b JOIN users u ON b.user_id = u.id').fetchall(); [print(f'  Booking #{r[0]} | User: {r[1]} | Status: {r[2]} | Total: `${r[3]} | Time: {r[4]}') for r in rows]"
+            python -c "import sqlite3; conn=sqlite3.connect(r'$dbPath'); cur=conn.cursor(); rows=cur.execute('SELECT b.id, u.name, b.status, b.total_amount, b.created_at FROM bookings b JOIN users u ON b.user_id = u.id').fetchall(); [print(f'  Booking #{r[0]} | User: {r[1]} | Status: {r[2]} | Total: ₹{r[3]} | Time: {r[4]}') for r in rows]"
         } else {
             Write-Warning "Database file not found at $dbPath"
         }

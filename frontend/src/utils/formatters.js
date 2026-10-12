@@ -4,9 +4,9 @@
 
 export function formatCurrency(amount) {
   const num = typeof amount === 'number' ? amount : parseFloat(amount || 0)
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 2,
   }).format(isNaN(num) ? 0 : num)
 }

@@ -177,7 +177,7 @@ export default function TicketManager() {
                 {isEditingThis ? (
                   <div className="edit-tier-grid">
                     <div className="form-group tight">
-                      <label className="form-label">Price ($)</label>
+                      <label className="form-label">Price (₹)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -261,7 +261,7 @@ export default function TicketManager() {
           </div>
           <div className="form-group tight">
             <label className="form-label" htmlFor="tierPrice">
-              Price
+              Price (₹)
             </label>
             <input
               id="tierPrice"
@@ -269,7 +269,7 @@ export default function TicketManager() {
               step="0.01"
               min="0"
               className="form-input"
-              placeholder="49.99"
+              placeholder="499.00"
               value={newTier.price}
               onChange={(e) => setNewTier({ ...newTier, price: e.target.value })}
               disabled={isAdding}
