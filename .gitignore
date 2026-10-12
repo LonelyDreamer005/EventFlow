@@ -93,6 +93,8 @@ build/
 *.sql.bak
 postgres-data/
 data/
+instance/
+backend/instance/
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
 docker-compose.override.yml.local

@@ -20,10 +20,8 @@ from datetime import datetime, timedelta, timezone
 
 # Load test env before creating app
 os.environ.setdefault("FLASK_ENV", "testing")
-os.environ.setdefault(
-    "TEST_DATABASE_URL",
-    "postgresql://eventflow_user:changeme_strong_password@localhost:5432/eventflow_test",
-)
+if not os.environ.get("TEST_DATABASE_URL") and not os.environ.get("POSTGRES_HOST"):
+    os.environ["TEST_DATABASE_URL"] = "sqlite:///eventflow_test.db"
 
 from app import create_app
 from app.extensions import db as _db
@@ -50,24 +48,20 @@ def app():
 def db(app):
     """
     Provide a clean database for each test function.
-
-    Uses a transaction + rollback strategy to keep tests isolated:
-    - Begin a savepoint before each test.
-    - Roll back after the test completes.
-    - No data persists between tests.
+    Cleans all tables before and after each test function.
     """
     with app.app_context():
-        connection = _db.engine.connect()
-        transaction = connection.begin()
-
-        # Bind the session to this connection so we can rollback
-        _db.session.bind = connection
+        _db.session.remove()
+        for table in reversed(_db.metadata.sorted_tables):
+            _db.session.execute(table.delete())
+        _db.session.commit()
 
         yield _db
 
         _db.session.remove()
-        transaction.rollback()
-        connection.close()
+        for table in reversed(_db.metadata.sorted_tables):
+            _db.session.execute(table.delete())
+        _db.session.commit()
 
 
 @pytest.fixture(scope="function")

@@ -20,7 +20,7 @@ def admin_required(fn):
     def wrapper(*args, **kwargs):
         verify_jwt_in_request()
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = User.query.get(int(user_id)) if user_id is not None else None
         if user is None:
             return jsonify({"error": "User not found."}), 401
         if not user.is_admin:
@@ -40,7 +40,7 @@ def customer_required(fn):
     def wrapper(*args, **kwargs):
         verify_jwt_in_request()
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = User.query.get(int(user_id)) if user_id is not None else None
         if user is None:
             return jsonify({"error": "User not found."}), 401
         return fn(*args, **kwargs)
@@ -58,4 +58,4 @@ def get_current_user() -> User | None:
     user_id = get_jwt_identity()
     if user_id is None:
         return None
-    return User.query.get(user_id)
+    return User.query.get(int(user_id))

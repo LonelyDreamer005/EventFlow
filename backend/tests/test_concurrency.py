@@ -81,11 +81,19 @@ class TestConcurrentBooking:
 
         return event, tt, admin
 
-    def test_concurrent_bookings_no_overselling(self, app):
+    def test_concurrent_bookings_no_overselling(self, app, db):
         """
         20 concurrent requests for a ticket with only 5 available.
         Final confirmed count must be exactly 5.
+        Requires PostgreSQL row-level locking.
         """
+        if _db.engine.dialect.name == "sqlite":
+            pytest.skip(
+                "High-contention 20-thread concurrency tests require PostgreSQL "
+                "row-level locking (SELECT ... FOR UPDATE). SQLite file locking raises "
+                "'database is locked' under 20 simultaneous writer threads."
+            )
+
         CAPACITY = 5
         NUM_REQUESTERS = 20
 
@@ -196,7 +204,7 @@ class TestConcurrentBooking:
             print(f"  DB confirmed qty: {total_confirmed_qty} (expected: {CAPACITY})")
             print("  ✅ No overselling detected.")
 
-    def test_concurrent_cancellation_no_double_restore(self, app):
+    def test_concurrent_cancellation_no_double_restore(self, app, db):
         """
         Two concurrent cancellation requests for the same booking.
         Inventory must be restored exactly once, not twice.

@@ -84,12 +84,14 @@ class TestBookingCreation:
         assert resp.status_code == 401
 
     def test_book_insufficient_inventory(
-        self, client, customer_token, ticket_type_vip
+        self, client, customer_token, ticket_type_vip, db
     ):
         """Cannot book more tickets than available — 409."""
+        ticket_type_vip.available = 1
+        db.session.commit()
         resp = client.post(
             "/api/v1/bookings",
-            json={"items": [{"ticket_type_id": ticket_type_vip.id, "quantity": 10}]},
+            json={"items": [{"ticket_type_id": ticket_type_vip.id, "quantity": 2}]},
             headers={"Authorization": f"Bearer {customer_token}"},
         )
         assert resp.status_code == 409

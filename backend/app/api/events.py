@@ -150,7 +150,7 @@ def create_event():
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
     from flask_jwt_extended import get_jwt_identity
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     event = Event(
         title=data["title"],

@@ -92,7 +92,7 @@ def login():
     if user is None or not user.check_password(data["password"]):
         return jsonify({"error": "Invalid email or password."}), 401
 
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
 
     # Never log the token value
     return (
@@ -117,5 +117,5 @@ def me():
         401: Not authenticated
     """
     user_id = get_jwt_identity()
-    user = User.query.get_or_404(user_id, description="User not found.")
+    user = User.query.get_or_404(int(user_id), description="User not found.")
     return jsonify({"user": user.to_dict()}), 200

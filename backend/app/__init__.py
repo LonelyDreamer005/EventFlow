@@ -40,6 +40,10 @@ def create_app(config_name: str | None = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+    @jwt.user_identity_loader
+    def user_identity_lookup(identity):
+        return str(identity)
     limiter.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────

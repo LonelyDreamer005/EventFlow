@@ -47,7 +47,7 @@ def book_tickets():
         409: Insufficient inventory or event not bookable
         422: Schema validation error
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     try:
         data = _create_schema.load(request.get_json(silent=True) or {})

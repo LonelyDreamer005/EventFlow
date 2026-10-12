@@ -99,9 +99,13 @@ class TestingConfig(BaseConfig):
     TESTING: bool = True
     DEBUG: bool = True
 
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
-        "TEST_DATABASE_URL",
-        "postgresql://eventflow_user:changeme_strong_password@localhost:5432/eventflow_test",
+    SQLALCHEMY_DATABASE_URI: str = (
+        os.environ.get("TEST_DATABASE_URL")
+        or (
+            f"postgresql://{os.environ.get('POSTGRES_USER', 'eventflow_user')}:{os.environ.get('POSTGRES_PASSWORD', '')}@{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/{os.environ.get('POSTGRES_DB', 'eventflow_test')}"
+            if os.environ.get("POSTGRES_HOST")
+            else "sqlite:///eventflow_test.db"
+        )
     )
     # Disable rate limiting during tests
     RATELIMIT_ENABLED: bool = False
