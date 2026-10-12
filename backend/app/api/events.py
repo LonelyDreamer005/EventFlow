@@ -3,7 +3,7 @@ EventFlow — Events API
 Routes: /api/v1/events/*
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
@@ -148,9 +148,6 @@ def create_event():
         data = _create_schema.load(request.get_json(silent=True) or {})
     except ValidationError as e:
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
-
-    from datetime import timedelta
-    from flask_jwt_extended import get_jwt_identity
 
     user_id = int(get_jwt_identity())
     start_at = data["start_at"]
