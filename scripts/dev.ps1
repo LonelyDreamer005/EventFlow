@@ -23,6 +23,9 @@ param (
         "docker-reset",
         "docker-logs",
         "docker-status",
+        "k8s-apply",
+        "k8s-delete",
+        "k8s-status",
         "clean"
     )]
     [string]$Command = "help"
@@ -56,6 +59,9 @@ function Show-Help {
     Write-Host "  docker-reset       Stop services and remove database volumes"
     Write-Host "  docker-logs        Stream live Docker container logs"
     Write-Host "  docker-status      Show running Docker container statuses"
+    Write-Host "  k8s-apply          Deploy all resources to Kubernetes cluster"
+    Write-Host "  k8s-delete         Remove all resources from Kubernetes cluster"
+    Write-Host "  k8s-status         Inspect running pods, services, and PVCs in eventflow namespace"
     Write-Host "  clean              Remove Python caches and build artifacts"
     Write-Host ""
 }
@@ -178,6 +184,29 @@ switch ($Command) {
     "docker-status" {
         Write-Host "--> Docker container status..." -ForegroundColor Cyan
         docker compose ps
+    }
+
+    "k8s-apply" {
+        Write-Host "--> Applying Kubernetes manifests to eventflow namespace..." -ForegroundColor Cyan
+        kubectl apply -f k8s/namespace.yaml
+        if (-not (kubectl get secret eventflow-secrets -n eventflow 2>$null)) {
+            Write-Host "--> Creating eventflow-secrets from k8s/secrets.yaml.example..." -ForegroundColor Yellow
+            kubectl apply -f k8s/secrets.yaml.example
+        }
+        kubectl apply -k k8s/
+        Write-Host "--> Kubernetes deployment applied successfully!" -ForegroundColor Green
+    }
+
+    "k8s-delete" {
+        Write-Host "--> Tearing down Kubernetes resources in eventflow namespace..." -ForegroundColor Yellow
+        kubectl delete -k k8s/ --ignore-not-found
+        kubectl delete namespace eventflow --ignore-not-found
+        Write-Host "--> Kubernetes resources removed." -ForegroundColor Green
+    }
+
+    "k8s-status" {
+        Write-Host "--> Inspecting Kubernetes resources (namespace: eventflow)..." -ForegroundColor Cyan
+        kubectl get all,pvc,configmap -n eventflow
     }
 
     "clean" {
