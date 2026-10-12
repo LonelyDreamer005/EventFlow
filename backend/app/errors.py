@@ -23,7 +23,9 @@ def register_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(403)
     def forbidden(e):
-        return jsonify({"error": "You do not have permission to perform this action."}), 403
+        return jsonify(
+            {"error": "You do not have permission to perform this action."}
+        ), 403
 
     @app.errorhandler(404)
     def not_found(e):
@@ -47,7 +49,9 @@ def register_error_handlers(app: Flask) -> None:
             jsonify(
                 {
                     "error": "Too many requests. Please wait before trying again.",
-                    "retry_after": str(e.retry_after) if hasattr(e, "retry_after") else None,
+                    "retry_after": str(e.retry_after)
+                    if hasattr(e, "retry_after")
+                    else None,
                 }
             ),
             429,
@@ -57,7 +61,9 @@ def register_error_handlers(app: Flask) -> None:
     def internal_error(e):
         # Do NOT expose exception details in production
         app.logger.exception("Internal server error: %s", e)
-        return jsonify({"error": "An internal error occurred. Please try again later."}), 500
+        return jsonify(
+            {"error": "An internal error occurred. Please try again later."}
+        ), 500
 
     @app.errorhandler(MarshmallowValidationError)
     def handle_validation_error(e: MarshmallowValidationError):

@@ -40,7 +40,7 @@ def health():
     try:
         # Lightweight DB connectivity check — does not read user data
         db.session.execute(db.text("SELECT 1"))
-    except Exception as exc:
+    except Exception:
         db_status = "error"
         overall = "degraded"
 

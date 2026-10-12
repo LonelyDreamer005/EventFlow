@@ -3,17 +3,17 @@ EventFlow — Events API
 Routes: /api/v1/events/*
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from marshmallow import ValidationError
 
+from ..auth.decorators import admin_required
 from ..extensions import db
 from ..models.event import Event, EventStatus
 from ..models.user import User
 from ..schemas.event import EventCreateSchema, EventUpdateSchema
-from ..auth.decorators import admin_required
 
 events_bp = Blueprint("events", __name__)
 
@@ -150,6 +150,7 @@ def create_event():
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
     from flask_jwt_extended import get_jwt_identity
+
     user_id = int(get_jwt_identity())
 
     event = Event(
@@ -198,7 +199,10 @@ def update_event(event_id: int):
     if new_status and new_status != event.status:
         allowed_transitions = {
             EventStatus.DRAFT.value: [EventStatus.PUBLISHED.value],
-            EventStatus.PUBLISHED.value: [EventStatus.CANCELLED.value, EventStatus.DRAFT.value],
+            EventStatus.PUBLISHED.value: [
+                EventStatus.CANCELLED.value,
+                EventStatus.DRAFT.value,
+            ],
             EventStatus.CANCELLED.value: [EventStatus.DRAFT.value],
         }
         allowed = allowed_transitions.get(event.status, [])
@@ -215,7 +219,7 @@ def update_event(event_id: int):
         if field in data:
             setattr(event, field, data[field])
 
-    event.updated_at = datetime.now(timezone.utc)
+    event.updated_at = datetime.now(UTC)
     db.session.commit()
 
     return jsonify({"event": event.to_dict(include_tickets=True)}), 200
@@ -239,7 +243,7 @@ def cancel_event(event_id: int):
         return jsonify({"error": "Event is already cancelled."}), 409
 
     event.status = EventStatus.CANCELLED.value
-    event.updated_at = datetime.now(timezone.utc)
+    event.updated_at = datetime.now(UTC)
     db.session.commit()
 
     return jsonify(

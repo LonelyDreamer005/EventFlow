@@ -1,8 +1,6 @@
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "SIM117"]
 exclude = [
     "migrations/",
     "backend/migrations/",
@@ -12,7 +10,11 @@ exclude = [
     "*.egg-info",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B008", "SIM117"]
+
+[tool.ruff.lint.isort]
 known-first-party = ["app"]
 
 [tool.pytest.ini_options]

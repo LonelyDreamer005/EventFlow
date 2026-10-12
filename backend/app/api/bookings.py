@@ -7,14 +7,11 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from marshmallow import ValidationError
 
-from ..auth.decorators import admin_required, get_current_user
-from ..extensions import db
+from ..auth.decorators import get_current_user
 from ..models.booking import Booking, BookingStatus
 from ..schemas.booking import BookingCreateSchema
 from ..services.booking_service import (
-    AlreadyCancelledError,
     BookingError,
-    BookingOwnershipError,
     cancel_booking,
     create_booking,
 )

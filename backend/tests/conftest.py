@@ -14,9 +14,10 @@ Example:
 """
 
 import os
-import pytest
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
+
+import pytest
 
 # Load test env before creating app
 os.environ.setdefault("FLASK_ENV", "testing")
@@ -25,10 +26,9 @@ if not os.environ.get("TEST_DATABASE_URL") and not os.environ.get("POSTGRES_HOST
 
 from app import create_app
 from app.extensions import db as _db
-from app.models.user import User
 from app.models.event import Event, EventStatus
 from app.models.ticket_type import TicketType
-from app.models.booking import Booking
+from app.models.user import User
 
 
 @pytest.fixture(scope="session")
@@ -71,6 +71,7 @@ def client(app, db):
 
 
 # ── User fixtures ─────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def customer_user(db):
@@ -116,6 +117,7 @@ def admin_token(client, admin_user):
 
 # ── Event fixtures ────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def published_event(db, admin_user):
     """A published event with a future start date."""
@@ -123,8 +125,8 @@ def published_event(db, admin_user):
         title="Test Concert",
         description="An amazing test concert event with great music.",
         venue="Test Arena",
-        start_at=datetime.now(timezone.utc) + timedelta(days=30),
-        end_at=datetime.now(timezone.utc) + timedelta(days=30, hours=3),
+        start_at=datetime.now(UTC) + timedelta(days=30),
+        end_at=datetime.now(UTC) + timedelta(days=30, hours=3),
         status=EventStatus.PUBLISHED.value,
         created_by=admin_user.id,
     )
@@ -140,8 +142,8 @@ def draft_event(db, admin_user):
         title="Draft Event",
         description="This event is not yet published and has a long description.",
         venue="Draft Venue",
-        start_at=datetime.now(timezone.utc) + timedelta(days=60),
-        end_at=datetime.now(timezone.utc) + timedelta(days=60, hours=2),
+        start_at=datetime.now(UTC) + timedelta(days=60),
+        end_at=datetime.now(UTC) + timedelta(days=60, hours=2),
         status=EventStatus.DRAFT.value,
         created_by=admin_user.id,
     )
@@ -157,8 +159,8 @@ def cancelled_event(db, admin_user):
         title="Cancelled Event",
         description="This event was cancelled and no longer accepts bookings.",
         venue="Cancelled Venue",
-        start_at=datetime.now(timezone.utc) + timedelta(days=10),
-        end_at=datetime.now(timezone.utc) + timedelta(days=10, hours=2),
+        start_at=datetime.now(UTC) + timedelta(days=10),
+        end_at=datetime.now(UTC) + timedelta(days=10, hours=2),
         status=EventStatus.CANCELLED.value,
         created_by=admin_user.id,
     )
@@ -168,6 +170,7 @@ def cancelled_event(db, admin_user):
 
 
 # ── Ticket type fixtures ──────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def ticket_type_regular(db, published_event):

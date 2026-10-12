@@ -41,11 +41,11 @@ from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..extensions import db
+from ..metrics import BOOKING_CANCELLED, BOOKING_CREATED, BOOKING_FAILED_INVENTORY
 from ..models.booking import Booking, BookingStatus
 from ..models.booking_item import BookingItem
 from ..models.event import Event, EventStatus
 from ..models.ticket_type import TicketType
-from ..metrics import BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_FAILED_INVENTORY
 
 
 class BookingError(Exception):
@@ -86,9 +86,7 @@ class AlreadyCancelledError(BookingError):
     """Raised when trying to cancel a booking that is already cancelled."""
 
     def __init__(self):
-        super().__init__(
-            "This booking is already cancelled.", status_code=409
-        )
+        super().__init__("This booking is already cancelled.", status_code=409)
 
 
 def create_booking(user_id: int, items_data: list[dict]) -> Booking:
@@ -229,7 +227,7 @@ def create_booking(user_id: int, items_data: list[dict]) -> Booking:
         current_app.logger.exception("Database error during booking creation: %s", e)
         raise BookingError(
             "A database error occurred. Please try again.", status_code=500
-        )
+        ) from e
 
 
 def cancel_booking(booking_id: int, user_id: int, is_admin: bool = False) -> Booking:
@@ -315,4 +313,4 @@ def cancel_booking(booking_id: int, user_id: int, is_admin: bool = False) -> Boo
         raise BookingError(
             "A database error occurred during cancellation. Please try again.",
             status_code=500,
-        )
+        ) from e

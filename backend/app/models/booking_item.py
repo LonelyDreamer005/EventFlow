@@ -24,9 +24,7 @@ class BookingItem(db.Model):
     __tablename__ = "booking_items"
     __table_args__ = (
         CheckConstraint("quantity >= 1", name="ck_booking_items_quantity_positive"),
-        CheckConstraint(
-            "unit_price > 0", name="ck_booking_items_unit_price_positive"
-        ),
+        CheckConstraint("unit_price > 0", name="ck_booking_items_unit_price_positive"),
         CheckConstraint("subtotal >= 0", name="ck_booking_items_subtotal_non_negative"),
         Index("ix_booking_items_booking_id", "booking_id"),
         Index("ix_booking_items_ticket_type_id", "ticket_type_id"),
@@ -54,7 +52,9 @@ class BookingItem(db.Model):
 
     # ── Factory ───────────────────────────────────────────────────────────────
     @classmethod
-    def create(cls, booking_id: int, ticket_type_id: int, quantity: int, unit_price: Decimal) -> "BookingItem":
+    def create(
+        cls, booking_id: int, ticket_type_id: int, quantity: int, unit_price: Decimal
+    ) -> "BookingItem":
         """Create a BookingItem with subtotal auto-computed."""
         return cls(
             booking_id=booking_id,

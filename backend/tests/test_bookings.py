@@ -5,15 +5,15 @@ Tests booking creation, validation, inventory deduction, cancellation,
 ownership privacy, and the critical double-cancellation prevention.
 """
 
-import pytest
+from datetime import UTC
 from decimal import Decimal
+
+import pytest
 
 
 @pytest.mark.integration
 class TestBookingCreation:
-    def test_book_tickets_success(
-        self, client, customer_token, ticket_type_regular
-    ):
+    def test_book_tickets_success(self, client, customer_token, ticket_type_regular):
         """Customer can book available tickets."""
         resp = client.post(
             "/api/v1/bookings",
@@ -97,20 +97,19 @@ class TestBookingCreation:
         assert resp.status_code == 409
         assert "insufficient" in resp.get_json()["error"].lower()
 
-    def test_book_cancelled_event(
-        self, client, customer_token, db, admin_user
-    ):
+    def test_book_cancelled_event(self, client, customer_token, db, admin_user):
         """Cannot book tickets for a cancelled event."""
+        from datetime import datetime, timedelta
+
         from app.models.event import Event, EventStatus
         from app.models.ticket_type import TicketType
-        from datetime import datetime, timedelta, timezone
 
         event = Event(
             title="Cancelled Event Test",
             description="Used to test that cancelled events reject bookings.",
             venue="Test Venue",
-            start_at=datetime.now(timezone.utc) + timedelta(days=10),
-            end_at=datetime.now(timezone.utc) + timedelta(days=10, hours=2),
+            start_at=datetime.now(UTC) + timedelta(days=10),
+            end_at=datetime.now(UTC) + timedelta(days=10, hours=2),
             status=EventStatus.CANCELLED.value,
             created_by=admin_user.id,
         )
@@ -159,9 +158,7 @@ class TestBookingCreation:
 
 @pytest.mark.integration
 class TestBookingHistory:
-    def test_list_own_bookings(
-        self, client, customer_token, ticket_type_regular
-    ):
+    def test_list_own_bookings(self, client, customer_token, ticket_type_regular):
         """Customer can list their own bookings."""
         # Create a booking
         client.post(
@@ -185,7 +182,6 @@ class TestBookingHistory:
         The response must be 404 (not 403) to prevent booking ID enumeration.
         """
         from app.models.user import User
-        from app.models.booking import Booking
 
         # Create a second customer
         other_user = User(

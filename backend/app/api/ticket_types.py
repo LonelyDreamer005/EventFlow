@@ -3,17 +3,17 @@ EventFlow — Ticket Types API
 Routes: /api/v1/events/<id>/ticket-types and /api/v1/ticket-types/<id>
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
+from ..auth.decorators import admin_required
 from ..extensions import db
 from ..models.event import Event, EventStatus
 from ..models.ticket_type import TicketType
 from ..schemas.ticket_type import TicketTypeCreateSchema, TicketTypeUpdateSchema
-from ..auth.decorators import admin_required
 
 ticket_types_bp = Blueprint("ticket_types", __name__)
 
@@ -33,7 +33,8 @@ def list_ticket_types(event_id: int):
         200: { ticket_types: [...] }
         404: Event not found
     """
-    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+
     from ..models.user import User
 
     is_admin = False
@@ -83,12 +84,12 @@ def create_ticket_type(event_id: int):
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
     # Check for duplicate name within this event
-    existing = TicketType.query.filter_by(
-        event_id=event_id, name=data["name"]
-    ).first()
+    existing = TicketType.query.filter_by(event_id=event_id, name=data["name"]).first()
     if existing:
         return jsonify(
-            {"error": f"A ticket type named '{data['name']}' already exists for this event."}
+            {
+                "error": f"A ticket type named '{data['name']}' already exists for this event."
+            }
         ), 409
 
     tt = TicketType(
@@ -151,7 +152,7 @@ def update_ticket_type(tt_id: int):
     if "max_per_booking" in data:
         tt.max_per_booking = data["max_per_booking"]
 
-    tt.updated_at = datetime.now(timezone.utc)
+    tt.updated_at = datetime.now(UTC)
     db.session.commit()
 
     return jsonify({"ticket_type": tt.to_dict()}), 200

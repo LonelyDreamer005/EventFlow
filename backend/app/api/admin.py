@@ -32,17 +32,11 @@ def dashboard():
 
     # ── Event counts ──────────────────────────────────────────────────────────
     total_events = Event.query.count()
-    published_events = Event.query.filter_by(
-        status=EventStatus.PUBLISHED.value
-    ).count()
-    cancelled_events = Event.query.filter_by(
-        status=EventStatus.CANCELLED.value
-    ).count()
+    published_events = Event.query.filter_by(status=EventStatus.PUBLISHED.value).count()
+    cancelled_events = Event.query.filter_by(status=EventStatus.CANCELLED.value).count()
 
     # ── Booking counts (CONFIRMED only) ───────────────────────────────────────
-    confirmed_bookings = Booking.query.filter_by(
-        status=BookingStatus.CONFIRMED
-    ).count()
+    confirmed_bookings = Booking.query.filter_by(status=BookingStatus.CONFIRMED).count()
     total_bookings = Booking.query.count()
 
     # ── Tickets sold & revenue (CONFIRMED bookings only) ─────────────────────
@@ -96,9 +90,7 @@ def dashboard():
     )
 
     # ── Recent bookings (last 10) ─────────────────────────────────────────────
-    recent_bookings = (
-        Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
-    )
+    recent_bookings = Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
 
     return jsonify(
         {

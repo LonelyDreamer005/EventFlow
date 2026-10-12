@@ -40,9 +40,7 @@ def register():
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
     # Check duplicate email (case-insensitive)
-    if User.query.filter(
-        db.func.lower(User.email) == data["email"].lower()
-    ).first():
+    if User.query.filter(db.func.lower(User.email) == data["email"].lower()).first():
         return jsonify({"error": "An account with this email already exists."}), 409
 
     user = User(
@@ -84,9 +82,7 @@ def login():
     except ValidationError as e:
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
-    user = User.query.filter(
-        db.func.lower(User.email) == data["email"].lower()
-    ).first()
+    user = User.query.filter(db.func.lower(User.email) == data["email"].lower()).first()
 
     # Use constant-time comparison to mitigate timing attacks
     if user is None or not user.check_password(data["password"]):

@@ -2,10 +2,10 @@
 EventFlow — User Model
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt
-from sqlalchemy import CheckConstraint, Enum, Index
+from sqlalchemy import CheckConstraint, Index
 
 from ..extensions import db
 
@@ -41,14 +41,12 @@ class User(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
     bookings = db.relationship("Booking", back_populates="user", lazy="dynamic")
-    events_created = db.relationship(
-        "Event", back_populates="creator", lazy="dynamic"
-    )
+    events_created = db.relationship("Event", back_populates="creator", lazy="dynamic")
 
     # ── Password helpers ──────────────────────────────────────────────────────
     def set_password(self, plaintext: str) -> None:

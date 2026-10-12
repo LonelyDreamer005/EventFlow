@@ -1,9 +1,9 @@
 """EventFlow — Schemas package."""
 
-from .auth import RegisterSchema, LoginSchema
+from .auth import LoginSchema, RegisterSchema
+from .booking import BookingCreateSchema
 from .event import EventCreateSchema, EventUpdateSchema
 from .ticket_type import TicketTypeCreateSchema, TicketTypeUpdateSchema
-from .booking import BookingCreateSchema
 
 __all__ = [
     "RegisterSchema",

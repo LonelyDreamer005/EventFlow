@@ -22,18 +22,18 @@ to simulate real concurrent HTTP clients.
 """
 
 import threading
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from app import create_app
 from app.extensions import db as _db
+from app.models.booking import Booking, BookingStatus
+from app.models.booking_item import BookingItem
 from app.models.event import Event, EventStatus
 from app.models.ticket_type import TicketType
 from app.models.user import User
-from app.models.booking import Booking, BookingStatus
-from app.models.booking_item import BookingItem
 
 
 @pytest.mark.concurrency
@@ -60,8 +60,8 @@ class TestConcurrentBooking:
             title="Concurrency Test Event",
             description="Used for concurrent booking tests to verify no overselling.",
             venue="Test Venue",
-            start_at=datetime.now(timezone.utc) + timedelta(days=30),
-            end_at=datetime.now(timezone.utc) + timedelta(days=30, hours=3),
+            start_at=datetime.now(UTC) + timedelta(days=30),
+            end_at=datetime.now(UTC) + timedelta(days=30, hours=3),
             status=EventStatus.PUBLISHED.value,
             created_by=admin.id,
         )
@@ -99,9 +99,8 @@ class TestConcurrentBooking:
 
         with app.app_context():
             # Set up test data in a clean session
-            event, tt, admin = self._make_test_data(_db.session, capacity=CAPACITY)
+            _event, tt, _admin = self._make_test_data(_db.session, capacity=CAPACITY)
             tt_id = tt.id
-            event_id = event.id
 
             # Create 20 customers
             customers = []
@@ -115,9 +114,7 @@ class TestConcurrentBooking:
                 _db.session.add(u)
             _db.session.commit()
 
-            customers = User.query.filter(
-                User.email.like("concuser%@test.com")
-            ).all()
+            customers = User.query.filter(User.email.like("concuser%@test.com")).all()
 
         # ── Thread worker ─────────────────────────────────────────────────────
         results = []  # (user_id, success: bool, error: str | None)
@@ -127,9 +124,10 @@ class TestConcurrentBooking:
             """Each thread runs in its own application context."""
             thread_app = self._make_app()
             with thread_app.app_context():
-                from app.services.booking_service import create_booking, BookingError
+                from app.services.booking_service import BookingError, create_booking
+
                 try:
-                    booking = create_booking(
+                    create_booking(
                         user_id=user_id,
                         items_data=[{"ticket_type_id": tt_id, "quantity": 1}],
                     )
@@ -143,10 +141,7 @@ class TestConcurrentBooking:
                         results.append((user_id, False, str(e)))
 
         # ── Launch all threads simultaneously ─────────────────────────────────
-        threads = [
-            threading.Thread(target=book, args=(c.id,))
-            for c in customers
-        ]
+        threads = [threading.Thread(target=book, args=(c.id,)) for c in customers]
 
         # Start all at once for maximum contention
         for t in threads:
@@ -159,7 +154,7 @@ class TestConcurrentBooking:
             successful = [r for r in results if r[1]]
             failed = [r for r in results if not r[1]]
 
-            print(f"\nConcurrency test results:")
+            print("\nConcurrency test results:")
             print(f"  Total requests: {NUM_REQUESTERS}")
             print(f"  Successful bookings: {len(successful)}")
             print(f"  Failed (expected): {len(failed)}")
@@ -224,6 +219,7 @@ class TestConcurrentBooking:
 
             # Create a confirmed booking (use 2 tickets)
             from app.services.booking_service import create_booking
+
             booking = create_booking(
                 user_id=customer.id,
                 items_data=[{"ticket_type_id": tt_id, "quantity": 2}],
@@ -238,7 +234,8 @@ class TestConcurrentBooking:
         def cancel(thread_id: int) -> None:
             thread_app = self._make_app()
             with thread_app.app_context():
-                from app.services.booking_service import cancel_booking, BookingError
+                from app.services.booking_service import BookingError, cancel_booking
+
                 try:
                     cancel_booking(booking_id=booking_id, user_id=user_id)
                     with lock:
@@ -247,10 +244,7 @@ class TestConcurrentBooking:
                     with lock:
                         cancel_results.append((thread_id, False, e.message))
 
-        threads = [
-            threading.Thread(target=cancel, args=(i,))
-            for i in range(2)
-        ]
+        threads = [threading.Thread(target=cancel, args=(i,)) for i in range(2)]
         for t in threads:
             t.start()
         for t in threads:
@@ -260,7 +254,7 @@ class TestConcurrentBooking:
             successes = [r for r in cancel_results if r[1]]
             failures = [r for r in cancel_results if not r[1]]
 
-            print(f"\nCancellation concurrency results:")
+            print("\nCancellation concurrency results:")
             print(f"  Successful cancellations: {len(successes)}")
             print(f"  Rejected (expected): {len(failures)}")
 

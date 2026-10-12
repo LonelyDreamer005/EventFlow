@@ -13,8 +13,6 @@ from prometheus_client import (
     Counter,
     Histogram,
     generate_latest,
-    multiprocess,
-    CollectorRegistry,
 )
 
 metrics_bp = Blueprint("metrics", __name__)
@@ -69,7 +67,9 @@ def start_metrics_middleware(app) -> None:
     def _after(response):
         # Normalize endpoint: use rule path if available, else 'unknown'
         endpoint = request.url_rule.rule if request.url_rule else "unknown"
-        duration = time.perf_counter() - getattr(request, "_metrics_start", time.perf_counter())
+        duration = time.perf_counter() - getattr(
+            request, "_metrics_start", time.perf_counter()
+        )
 
         REQUEST_COUNT.labels(
             method=request.method,

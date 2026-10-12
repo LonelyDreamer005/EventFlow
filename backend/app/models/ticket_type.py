@@ -11,8 +11,7 @@ Invariants (enforced at DB level):
     price     > 0
 """
 
-from datetime import datetime, timezone
-from decimal import Decimal
+from datetime import UTC, datetime
 
 from sqlalchemy import CheckConstraint, Index, Numeric, UniqueConstraint
 
@@ -34,16 +33,14 @@ class TicketType(db.Model):
     __table_args__ = (
         # Inventory invariants — enforced at the database level
         CheckConstraint("capacity >= 1", name="ck_ticket_types_capacity_positive"),
-        CheckConstraint("available >= 0", name="ck_ticket_types_available_non_negative"),
+        CheckConstraint(
+            "available >= 0", name="ck_ticket_types_available_non_negative"
+        ),
         CheckConstraint(
             "available <= capacity", name="ck_ticket_types_available_lte_capacity"
         ),
-        CheckConstraint(
-            "price > 0", name="ck_ticket_types_price_positive"
-        ),
-        CheckConstraint(
-            "max_per_booking >= 1", name="ck_ticket_types_max_per_booking"
-        ),
+        CheckConstraint("price > 0", name="ck_ticket_types_price_positive"),
+        CheckConstraint("max_per_booking >= 1", name="ck_ticket_types_max_per_booking"),
         # Each event can only have one ticket type with a given name
         UniqueConstraint("event_id", "name", name="uq_ticket_types_event_name"),
         Index("ix_ticket_types_event_id", "event_id"),
@@ -62,13 +59,13 @@ class TicketType(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────

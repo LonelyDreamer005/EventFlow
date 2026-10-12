@@ -2,17 +2,19 @@
 EventFlow Backend — Application Factory
 """
 
+import contextlib
 import os
+from datetime import UTC
 
 from flask import Flask
 from flask_cors import CORS
 
+from .api import register_blueprints
 from .config import get_config
-from .extensions import db, jwt, limiter, migrate
 from .errors import register_error_handlers
+from .extensions import db, jwt, limiter, migrate
 from .health import health_bp
 from .metrics import metrics_bp, start_metrics_middleware
-from .api import register_blueprints
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -44,6 +46,7 @@ def create_app(config_name: str | None = None) -> Flask:
     @jwt.user_identity_loader
     def user_identity_lookup(identity):
         return str(identity)
+
     limiter.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
@@ -69,11 +72,8 @@ def create_app(config_name: str | None = None) -> Flask:
     _register_cli_commands(app)
 
     # ── Auto-initialize tables on startup if not present ──────────────────────
-    with app.app_context():
-        try:
-            db.create_all()
-        except Exception:
-            pass
+    with app.app_context(), contextlib.suppress(Exception):
+        db.create_all()
 
     return app
 
@@ -85,8 +85,9 @@ def _register_cli_commands(app: Flask) -> None:
     def create_admin():
         """Bootstrap the first administrator account."""
         import getpass
-        from .models.user import User
+
         from .extensions import db
+        from .models.user import User
 
         print("=" * 50)
         print("EventFlow — Create Administrator Account")
@@ -114,7 +115,7 @@ def _register_cli_commands(app: Flask) -> None:
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
-            print(f"\n✅ Administrator account created successfully.")
+            print("\n✅ Administrator account created successfully.")
             print(f"   Name:  {admin.name}")
             print(f"   Email: {admin.email}")
             print(f"   Role:  {admin.role}")
@@ -123,12 +124,13 @@ def _register_cli_commands(app: Flask) -> None:
     @app.cli.command("seed-events")
     def seed_events():
         """Create sample events for development/demo purposes."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
         from decimal import Decimal
-        from .models.user import User
+
+        from .extensions import db
         from .models.event import Event, EventStatus
         from .models.ticket_type import TicketType
-        from .extensions import db
+        from .models.user import User
 
         with app.app_context():
             admin = User.query.filter_by(role="admin").first()
@@ -136,7 +138,7 @@ def _register_cli_commands(app: Flask) -> None:
                 print("ERROR: No admin user found. Run 'flask create-admin' first.")
                 return
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             sample_events = [
                 {
                     "title": "Tech Summit 2026",

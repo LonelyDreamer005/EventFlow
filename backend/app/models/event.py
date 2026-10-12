@@ -3,9 +3,9 @@ EventFlow — Event Model
 """
 
 import enum
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import CheckConstraint, Enum, Index
+from sqlalchemy import CheckConstraint, Index
 
 from ..extensions import db
 
@@ -59,13 +59,13 @@ class Event(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
@@ -89,13 +89,12 @@ class Event(db.Model):
     @property
     def is_bookable(self) -> bool:
         """True if the event accepts new bookings right now."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         start = self.start_at
         if start and start.tzinfo is None:
-            start = start.replace(tzinfo=timezone.utc)
-        return (
-            self.status == EventStatus.PUBLISHED.value
-            and (start is not None and start > now)
+            start = start.replace(tzinfo=UTC)
+        return self.status == EventStatus.PUBLISHED.value and (
+            start is not None and start > now
         )
 
     def total_capacity(self) -> int:

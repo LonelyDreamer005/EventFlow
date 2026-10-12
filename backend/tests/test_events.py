@@ -5,12 +5,13 @@ Tests event CRUD, status transitions, public/admin visibility,
 ticket type management, and validation.
 """
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
 
 
 def _future_dates():
-    start = datetime.now(timezone.utc) + timedelta(days=30)
+    start = datetime.now(UTC) + timedelta(days=30)
     end = start + timedelta(hours=3)
     return start.isoformat(), end.isoformat()
 
@@ -137,7 +138,7 @@ class TestAdminEventManagement:
 
     def test_create_event_end_before_start(self, client, admin_token):
         """Event with end_at before start_at returns 422."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         resp = client.post(
             "/api/v1/events",
             json={
@@ -215,7 +216,9 @@ class TestTicketTypes:
         )
         assert resp.status_code == 409
 
-    def test_create_ticket_type_negative_price(self, client, admin_token, published_event):
+    def test_create_ticket_type_negative_price(
+        self, client, admin_token, published_event
+    ):
         """Negative price returns 422."""
         resp = client.post(
             f"/api/v1/events/{published_event.id}/ticket-types",
@@ -224,7 +227,9 @@ class TestTicketTypes:
         )
         assert resp.status_code == 422
 
-    def test_list_ticket_types_public(self, client, published_event, ticket_type_regular):
+    def test_list_ticket_types_public(
+        self, client, published_event, ticket_type_regular
+    ):
         """Public can list ticket types for a published event."""
         resp = client.get(f"/api/v1/events/{published_event.id}/ticket-types")
         assert resp.status_code == 200

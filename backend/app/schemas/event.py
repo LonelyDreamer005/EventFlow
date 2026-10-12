@@ -2,9 +2,14 @@
 EventFlow — Event Schemas
 """
 
-from datetime import datetime, timezone
-
-from marshmallow import Schema, ValidationError, fields, validate, validates, validates_schema
+from marshmallow import (
+    Schema,
+    ValidationError,
+    fields,
+    validate,
+    validates,
+    validates_schema,
+)
 
 
 class EventCreateSchema(Schema):
@@ -46,12 +51,12 @@ class EventCreateSchema(Schema):
                 raise ValidationError(
                     {"end_at": ["End time must be after start time."]}
                 )
-            now = datetime.now(timezone.utc)
             # Allow start to be in the past only slightly (for dev/test convenience)
             # In real production, you'd enforce start_at > now
             if start.tzinfo is None:
                 # Treat naive datetime as UTC
                 import pytz
+
                 start = pytz.utc.localize(start)
 
 
@@ -73,6 +78,4 @@ class EventUpdateSchema(Schema):
         start = data.get("start_at")
         end = data.get("end_at")
         if start and end and end <= start:
-            raise ValidationError(
-                {"end_at": ["End time must be after start time."]}
-            )
+            raise ValidationError({"end_at": ["End time must be after start time."]})

@@ -14,7 +14,10 @@ class RegisterSchema(Schema):
     email = fields.Email(
         required=True,
         validate=validate.Length(max=255),
-        error_messages={"required": "Email is required.", "invalid": "Invalid email address."},
+        error_messages={
+            "required": "Email is required.",
+            "invalid": "Invalid email address.",
+        },
     )
     password = fields.String(
         required=True,

@@ -47,14 +47,17 @@ class BaseConfig:
     CORS_ORIGINS: list = [
         origin.strip()
         for origin in os.environ.get(
-            "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost"
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://localhost:3000,http://localhost",
         ).split(",")
         if origin.strip()
     ]
 
     # Rate limiting
     RATELIMIT_STORAGE_URI: str = "memory://"
-    RATELIMIT_DEFAULT: str = os.environ.get("RATELIMIT_DEFAULT", "200 per day;50 per hour")
+    RATELIMIT_DEFAULT: str = os.environ.get(
+        "RATELIMIT_DEFAULT", "200 per day;50 per hour"
+    )
     RATELIMIT_AUTH: str = os.environ.get("RATELIMIT_AUTH", "10 per minute")
 
     # Pagination
@@ -68,7 +71,7 @@ class BaseConfig:
         if direct_url:
             # Fix legacy postgres:// → postgresql://
             if direct_url.startswith("postgres://"):
-                direct_url = "postgresql://" + direct_url[len("postgres://"):]
+                direct_url = "postgresql://" + direct_url[len("postgres://") :]
             return direct_url
 
         # Check if PostgreSQL is explicitly configured or running in production
@@ -99,13 +102,10 @@ class TestingConfig(BaseConfig):
     TESTING: bool = True
     DEBUG: bool = True
 
-    SQLALCHEMY_DATABASE_URI: str = (
-        os.environ.get("TEST_DATABASE_URL")
-        or (
-            f"postgresql://{os.environ.get('POSTGRES_USER', 'eventflow_user')}:{os.environ.get('POSTGRES_PASSWORD', '')}@{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/{os.environ.get('POSTGRES_DB', 'eventflow_test')}"
-            if os.environ.get("POSTGRES_HOST")
-            else "sqlite:///eventflow_test.db"
-        )
+    SQLALCHEMY_DATABASE_URI: str = os.environ.get("TEST_DATABASE_URL") or (
+        f"postgresql://{os.environ.get('POSTGRES_USER', 'eventflow_user')}:{os.environ.get('POSTGRES_PASSWORD', '')}@{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/{os.environ.get('POSTGRES_DB', 'eventflow_test')}"
+        if os.environ.get("POSTGRES_HOST")
+        else "sqlite:///eventflow_test.db"
     )
     # Disable rate limiting during tests
     RATELIMIT_ENABLED: bool = False
@@ -146,7 +146,6 @@ def get_config(config_name: str) -> type[BaseConfig]:
     config_class = _CONFIG_MAP.get(config_name.lower())
     if config_class is None:
         raise ValueError(
-            f"Unknown config '{config_name}'. "
-            f"Choose from: {list(_CONFIG_MAP.keys())}"
+            f"Unknown config '{config_name}'. Choose from: {list(_CONFIG_MAP.keys())}"
         )
     return config_class

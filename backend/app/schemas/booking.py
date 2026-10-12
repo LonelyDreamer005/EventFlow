@@ -2,7 +2,14 @@
 EventFlow — Booking Schemas
 """
 
-from marshmallow import Schema, ValidationError, fields, validate, validates, validates_schema
+from marshmallow import (
+    Schema,
+    ValidationError,
+    fields,
+    validate,
+    validates,
+    validates_schema,
+)
 
 
 class BookingItemInputSchema(Schema):
@@ -39,5 +46,9 @@ class BookingCreateSchema(Schema):
         total = sum(item.get("quantity", 0) for item in items)
         if total > 20:
             raise ValidationError(
-                {"items": [f"Total ticket quantity ({total}) exceeds the maximum of 20 per booking."]}
+                {
+                    "items": [
+                        f"Total ticket quantity ({total}) exceeds the maximum of 20 per booking."
+                    ]
+                }
             )
