@@ -89,11 +89,19 @@ export default function EventForm() {
         navigate(`/admin/events/${newEventId}/tickets`)
       }
     } catch (err) {
-      setServerError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          'Failed to save event. Please check input values.',
-      )
+      const resp = err?.response?.data
+      if (resp?.details) {
+        const detailList = Object.entries(resp.details)
+          .map(([f, msgs]) => `${f}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .join(' | ')
+        setServerError(`Validation error (${detailList})`)
+      } else {
+        setServerError(
+          resp?.message ||
+            resp?.error ||
+            'Failed to save event. Please check input values.',
+        )
+      }
     } finally {
       setIsSubmitting(false)
     }

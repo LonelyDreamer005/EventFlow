@@ -30,8 +30,16 @@ class EventCreateSchema(Schema):
         format="iso",
     )
     end_at = fields.DateTime(
-        required=True,
+        load_default=None,
+        allow_none=True,
         format="iso",
+    )
+    status = fields.String(
+        load_default="draft",
+        validate=validate.OneOf(
+            ["draft", "published"],
+            error="Status must be one of: draft, published",
+        ),
     )
 
     @validates("title")

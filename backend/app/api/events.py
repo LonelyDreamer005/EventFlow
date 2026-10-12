@@ -149,17 +149,21 @@ def create_event():
     except ValidationError as e:
         return jsonify({"error": "Validation failed.", "details": e.messages}), 422
 
+    from datetime import timedelta
     from flask_jwt_extended import get_jwt_identity
 
     user_id = int(get_jwt_identity())
+    start_at = data["start_at"]
+    end_at = data.get("end_at") or (start_at + timedelta(hours=3))
+    status_val = data.get("status") or EventStatus.DRAFT.value
 
     event = Event(
         title=data["title"],
         description=data["description"],
         venue=data["venue"],
-        start_at=data["start_at"],
-        end_at=data["end_at"],
-        status=EventStatus.DRAFT.value,
+        start_at=start_at,
+        end_at=end_at,
+        status=status_val,
         created_by=user_id,
     )
     db.session.add(event)
