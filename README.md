@@ -912,3 +912,43 @@ The core application, concurrency engine, frontend, and tests are complete and p
   - `.\scripts\dev.ps1 obs-up` — Starts Prometheus (port 9090) and Grafana (port 3001) in Docker.
   - `.\scripts\dev.ps1 obs-status` — Verifies container health for the observability stack.
   - `.\scripts\dev.ps1 obs-down` — Stops monitoring containers.
+
+---
+
+## 14. Public Concurrent Testing & Live Deployment
+
+EventFlow is built from the ground up for high-concurrency event reservations. You can test and deploy it publicly using the following pathways:
+
+### Option A: Instant Live Testing via Cloudflare Tunnel (Zero-Config, Free HTTPS)
+
+To invite teammates, external users, or evaluators to test concurrent ticket bookings simultaneously from their smartphones or laptops anywhere in the world:
+
+1. **Verify your local servers are running**:
+   - Backend API running on port 5000 (`.\scripts\dev.ps1 run-backend`)
+   - Frontend SPA running on port 3000 (`.\scripts\dev.ps1 run-frontend`)
+2. **Launch the Cloudflare Tunnel**:
+   ```powershell
+   cloudflared tunnel --url http://localhost:3000
+   ```
+3. **Share the generated URL**:
+   - Cloudflare establishes a secure tunnel and prints a live URL:
+     ```text
+     https://<random-name>.trycloudflare.com
+     ```
+   - **Vite Host Protection**: `frontend/vite.config.js` is configured with `server.allowedHosts: true` to seamlessly accept Cloudflare tunnel domains.
+   - **Reverse Proxy**: All `/api/*` requests from remote clients are automatically routed by the Vite server to the backend with zero CORS friction.
+   - **Testing Concurrency**: Have multiple users open the event checkout page simultaneously and click **Reserve Tickets** at the exact same second to witness PostgreSQL's `SELECT ... FOR UPDATE` locking mechanism enforce zero overbooking in real-time.
+   - **Teardown**: Press `Ctrl + C` in the tunnel terminal to close external access.
+
+---
+
+### Option B: 24/7 Cloud Deployment (PaaS / VPS / Kubernetes)
+
+For long-term, 24/7 production availability independent of your local machine:
+
+| Environment | Recommended Provider | Architecture | Deployment Steps |
+|---|---|---|---|
+| **Cloud PaaS** | [Render](https://render.com) / [Railway](https://railway.app) | Web Service + Managed PostgreSQL | Connect GitHub repository (`LonelyDreamer005/EventFlow`), attach managed Postgres, set `DATABASE_URL` and `SECRET_KEY`. |
+| **Cloud VM / VPS** | DigitalOcean Droplet / AWS EC2 / Hetzner | Docker Compose Stack | SSH into Linux VM, clone repo, configure `.env`, and run `docker compose up -d` with automated Nginx reverse proxy. |
+| **Cloud Kubernetes** | GKE / EKS / DigitalOcean DOKS | Kustomize Declarative Manifests | Switch `k8s/frontend/service.yaml` to `type: LoadBalancer` and execute `kubectl apply -k k8s/`. Autoscales with HPA between 2 and 8 replicas. |
+

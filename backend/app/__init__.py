@@ -4,6 +4,7 @@ EventFlow Backend — Application Factory
 
 import contextlib
 import os
+import re
 from datetime import UTC
 
 from flask import Flask
@@ -50,7 +51,8 @@ def create_app(config_name: str | None = None) -> Flask:
     limiter.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    origins = app.config.get("CORS_ORIGINS", [])
+    origins = list(app.config.get("CORS_ORIGINS", []))
+    origins.append(re.compile(r"^https?://.*\.trycloudflare\.com$"))
     CORS(
         app,
         resources={r"/api/*": {"origins": origins}},
