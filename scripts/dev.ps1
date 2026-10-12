@@ -6,6 +6,7 @@ param (
         "install",
         "install-dev",
         "lint",
+        "lint-fix",
         "test",
         "test-unit",
         "test-integration",
@@ -37,7 +38,8 @@ function Show-Help {
     Write-Host "Available commands:" -ForegroundColor White
     Write-Host "  install            Install backend + frontend dependencies"
     Write-Host "  install-dev        Install backend dev dependencies"
-    Write-Host "  lint               Run ruff linting on backend"
+    Write-Host "  lint               Run ruff linting and format checking on backend"
+    Write-Host "  lint-fix           Run ruff auto-fixing and code formatting"
     Write-Host "  test               Run all backend tests"
     Write-Host "  test-unit          Run unit tests only"
     Write-Host "  test-integration   Run integration tests (requires PostgreSQL)"
@@ -80,8 +82,15 @@ switch ($Command) {
     }
 
     "lint" {
-        Write-Host "--> Running ruff linter..." -ForegroundColor Cyan
+        Write-Host "--> Running ruff linter & format check..." -ForegroundColor Cyan
         ruff check backend/app backend/tests
+        ruff format --check backend/app backend/tests
+    }
+
+    "lint-fix" {
+        Write-Host "--> Running ruff autofix and formatting..." -ForegroundColor Cyan
+        ruff check --fix backend/app backend/tests
+        ruff format backend/app backend/tests
     }
 
     "test" {
