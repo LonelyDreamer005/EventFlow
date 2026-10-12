@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Calendar, Compass } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { bookingService } from '../services/bookings'
 import BookingCard from '../components/BookingCard'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -8,6 +9,7 @@ import Pagination from '../components/Pagination'
 import ErrorMessage from '../components/ErrorMessage'
 
 export default function BookingHistory() {
+  const { isAdmin } = useAuth()
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -42,6 +44,10 @@ export default function BookingHistory() {
     if (statusFilter === 'all') return true
     return b.status === statusFilter
   })
+
+  if (isAdmin) {
+    return <Navigate to="/admin/bookings" replace />
+  }
 
   return (
     <div className="page-wrap page-stack">

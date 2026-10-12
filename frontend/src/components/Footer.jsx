@@ -29,6 +29,7 @@ export default function Footer() {
                 <>
                   <Link to="/admin/dashboard">Admin Hub</Link>
                   <Link to="/admin/events">Manage events</Link>
+                  <Link to="/admin/bookings">All bookings</Link>
                   <Link to="/admin/users">User directory</Link>
                 </>
               ) : (

@@ -55,6 +55,13 @@ export default function Navbar() {
             Events
           </Link>
           <Link
+            to="/admin/bookings"
+            className={`nav-link ${isActive('/admin/bookings') ? 'is-active' : ''}`}
+            onClick={onNavigate}
+          >
+            <Ticket size={16} /> Bookings
+          </Link>
+          <Link
             to="/admin/users"
             className={`nav-link ${isActive('/admin/users') ? 'is-active' : ''}`}
             onClick={onNavigate}

@@ -55,6 +55,9 @@ export default function AdminDashboard() {
           <p className="page-subtitle">Revenue, inventory, and live reservation metrics.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+          <Link to="/admin/bookings" className="btn btn-secondary btn-sm">
+            <Ticket size={15} /> All bookings
+          </Link>
           <Link to="/admin/users" className="btn btn-secondary btn-sm">
             <Users size={15} /> View users ({stats.total_users || 0})
           </Link>
@@ -72,10 +75,11 @@ export default function AdminDashboard() {
           <span className="stat-label">Revenue</span>
           <span className="stat-value">{formatCurrency(stats.total_revenue || 0)}</span>
         </div>
-        <div className="stat-tile">
+        <Link to="/admin/bookings" className="stat-tile" style={{ textDecoration: 'none', color: 'inherit' }}>
           <span className="stat-label">Tickets sold</span>
           <span className="stat-value">{stats.tickets_sold || 0}</span>
-        </div>
+          <span className="stat-hint" style={{ color: 'var(--gold)' }}>View all bookings &rarr;</span>
+        </Link>
         <div className="stat-tile">
           <span className="stat-label">Events</span>
           <span className="stat-value">{stats.total_events || 0}</span>
@@ -96,7 +100,9 @@ export default function AdminDashboard() {
               Real-time bookings with customer names and ticket details.
             </p>
           </div>
-          <span className="stat-hint">Most recent 10</span>
+          <Link to="/admin/bookings" className="btn btn-outline btn-sm">
+            View all bookings <ArrowRight size={13} />
+          </Link>
         </div>
 
         {recent_bookings.length === 0 ? (
